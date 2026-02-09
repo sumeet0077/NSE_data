@@ -1,0 +1,17 @@
+{
+  "start_date": "2014-01-01",
+  "end_date": "2026-02-09",
+  "min_trade_date": "2014-01-01",
+  "max_trade_date": "2026-02-09",
+  "row_count": 6186542,
+  "unique_symbols": 4880,
+  "rows_2015_onwards": 5800154,
+  "rows_with_deliv_pct_2015_onwards": 3386007,
+  "deliv_pct_coverage_2015_onwards_percent": 58.3779,
+  "feb_1_2026_exists": true,
+  "generated_at": "2026-02-10T00:52:11.049338",
+  "output_dataset_dir": "/Users/sumeetdas/Antigravity_NSE_Data/nse_master_bhav_with_delivery_2014_onwards.parquet",
+  "raw_downloads_dir": "/Users/sumeetdas/Antigravity_NSE_Data/raw_downloads",
+  "processed_daily_dir": "/Users/sumeetdas/Antigravity_NSE_Data/processed/daily",
+  "log_path": "/Users/sumeetdas/Antigravity_NSE_Data/pipeline.log"
+}

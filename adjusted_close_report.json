@@ -1,0 +1,274 @@
+{
+  "original_dataset_dir": "/Users/sumeetdas/Antigravity_NSE_Data/nse_master_bhav_with_delivery_2014_onwards.parquet",
+  "output_dataset_dir": "/Users/sumeetdas/Antigravity_NSE_Data/nse_master_adjusted_2014_onwards.parquet",
+  "rows": 6186542,
+  "unique_symbols": 4880,
+  "min_trade_date": "2014-01-01",
+  "max_trade_date": "2026-02-09",
+  "symbol_method_counts": {
+    "yfinance": 2322,
+    "raw_no_adjustment": 1822,
+    "nse_corporate_actions": 736
+  },
+  "row_coverage_percent_by_method": {
+    "raw_no_adjustment": 19.7938,
+    "yfinance": 52.4647,
+    "nse_corporate_actions": 27.7415
+  },
+  "per_year_row_coverage_percent_by_method": {
+    "2014": {
+      "nse_corporate_actions": 24.1529,
+      "raw_no_adjustment": 32.4599,
+      "yfinance": 43.3872
+    },
+    "2015": {
+      "nse_corporate_actions": 25.8811,
+      "raw_no_adjustment": 28.9273,
+      "yfinance": 45.1917
+    },
+    "2016": {
+      "nse_corporate_actions": 26.6593,
+      "raw_no_adjustment": 27.2735,
+      "yfinance": 46.0672
+    },
+    "2017": {
+      "nse_corporate_actions": 27.8997,
+      "raw_no_adjustment": 25.3725,
+      "yfinance": 46.7278
+    },
+    "2018": {
+      "nse_corporate_actions": 28.5367,
+      "raw_no_adjustment": 23.94,
+      "yfinance": 47.5233
+    },
+    "2019": {
+      "nse_corporate_actions": 28.7446,
+      "raw_no_adjustment": 23.088,
+      "yfinance": 48.1675
+    },
+    "2020": {
+      "nse_corporate_actions": 29.4124,
+      "raw_no_adjustment": 22.606,
+      "yfinance": 47.9816
+    },
+    "2021": {
+      "nse_corporate_actions": 30.2431,
+      "raw_no_adjustment": 20.1427,
+      "yfinance": 49.6143
+    },
+    "2022": {
+      "nse_corporate_actions": 30.3992,
+      "raw_no_adjustment": 17.1746,
+      "yfinance": 52.4262
+    },
+    "2023": {
+      "nse_corporate_actions": 29.9286,
+      "raw_no_adjustment": 14.5271,
+      "yfinance": 55.5443
+    },
+    "2024": {
+      "nse_corporate_actions": 27.0653,
+      "raw_no_adjustment": 9.565,
+      "yfinance": 63.3697
+    },
+    "2025": {
+      "nse_corporate_actions": 24.4319,
+      "raw_no_adjustment": 10.2908,
+      "yfinance": 65.2773
+    },
+    "2026": {
+      "nse_corporate_actions": 23.0232,
+      "raw_no_adjustment": 10.7254,
+      "yfinance": 66.2514
+    }
+  },
+  "value_changed_rows_percent": 50.3816,
+  "per_year_abs_dev_stats": {
+    "2014": {
+      "mean_abs_dev": 0.17915000021457672,
+      "median_abs_dev": 0.008944000117480755,
+      "rows": 386388
+    },
+    "2015": {
+      "mean_abs_dev": 0.17181700468063354,
+      "median_abs_dev": 0.015545999631285667,
+      "rows": 391769
+    },
+    "2016": {
+      "mean_abs_dev": 0.16209299862384796,
+      "median_abs_dev": 0.013352000154554844,
+      "rows": 409163
+    },
+    "2017": {
+      "mean_abs_dev": 0.15588200092315674,
+      "median_abs_dev": 0.015461999922990799,
+      "rows": 437241
+    },
+    "2018": {
+      "mean_abs_dev": 0.14584699273109436,
+      "median_abs_dev": 0.014462999999523163,
+      "rows": 463036
+    },
+    "2019": {
+      "mean_abs_dev": 0.13539700210094452,
+      "median_abs_dev": 0.011730000376701355,
+      "rows": 470085
+    },
+    "2020": {
+      "mean_abs_dev": 0.12757299840450287,
+      "median_abs_dev": 0.009402000345289707,
+      "rows": 494081
+    },
+    "2021": {
+      "mean_abs_dev": 0.1223670020699501,
+      "median_abs_dev": 0.008709999732673168,
+      "rows": 512266
+    },
+    "2022": {
+      "mean_abs_dev": 0.10621999949216843,
+      "median_abs_dev": 0.006006000097841024,
+      "rows": 555537
+    },
+    "2023": {
+      "mean_abs_dev": 0.08527199923992157,
+      "median_abs_dev": 0.002899999963119626,
+      "rows": 597750
+    },
+    "2024": {
+      "mean_abs_dev": 0.051486000418663025,
+      "median_abs_dev": 0.0,
+      "rows": 660303
+    },
+    "2025": {
+      "mean_abs_dev": 0.017023999243974686,
+      "median_abs_dev": 0.0,
+      "rows": 725290
+    },
+    "2026": {
+      "mean_abs_dev": 0.0006089999806135893,
+      "median_abs_dev": 0.0,
+      "rows": 83633
+    }
+  },
+  "recent_2y_outlier_rows_pct_gt_10pct": 4.341928,
+  "recent_2y_mean_abs_adjustment_deviation": 0.029602,
+  "known_action_tests": [
+    {
+      "symbol": "RELIANCE",
+      "status": "passed",
+      "exDate": "2017-09-07",
+      "subject": " Bonus 1:1",
+      "expected_factor": 0.5,
+      "actual_factor": 0.5,
+      "rel_error": 0.0
+    },
+    {
+      "symbol": "INFY",
+      "status": "passed",
+      "exDate": "2014-12-02",
+      "subject": "Bonus 1:1",
+      "expected_factor": 0.5,
+      "actual_factor": 0.5,
+      "rel_error": 0.0
+    },
+    {
+      "symbol": "TCS",
+      "status": "passed",
+      "exDate": "2018-05-31",
+      "subject": " Bonus 1:1 /Dividend- Rs 29 Per Share",
+      "expected_factor": 0.495874,
+      "actual_factor": 0.495874,
+      "rel_error": 0.0
+    },
+    {
+      "symbol": "BAJFINANCE",
+      "status": "passed",
+      "exDate": "2016-09-08",
+      "subject": " Bonus 1:1/Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 2/- Per Share",
+      "expected_factor": 0.1,
+      "actual_factor": 0.1,
+      "rel_error": 0.0
+    },
+    {
+      "symbol": "VBL",
+      "status": "passed",
+      "exDate": "2019-07-25",
+      "subject": " Bonus 1:2",
+      "expected_factor": 0.666667,
+      "actual_factor": 0.666667,
+      "rel_error": 0.0
+    },
+    {
+      "symbol": "HDFCBANK",
+      "status": "passed",
+      "exDate": "2019-09-19",
+      "subject": " Face Value Split (Sub-Division) - From Rs 2 Per Share To Rs 1 Per Share",
+      "expected_factor": 0.5,
+      "actual_factor": 0.5,
+      "rel_error": 0.0
+    },
+    {
+      "symbol": "WIPRO",
+      "status": "passed",
+      "exDate": "2017-06-13",
+      "subject": " Bonus 1:1",
+      "expected_factor": 0.5,
+      "actual_factor": 0.5,
+      "rel_error": 0.0
+    },
+    {
+      "symbol": "SBIN",
+      "status": "passed",
+      "exDate": "2014-11-20",
+      "subject": "Face Value Split Rs.10/- To Re.1/- Per Share",
+      "expected_factor": 0.1,
+      "actual_factor": 0.1,
+      "rel_error": 0.0
+    },
+    {
+      "symbol": "ICICIBANK",
+      "status": "passed",
+      "exDate": "2014-12-04",
+      "subject": "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 2/- Per Share",
+      "expected_factor": 0.2,
+      "actual_factor": 0.2,
+      "rel_error": 0.0
+    },
+    {
+      "symbol": "MARUTI",
+      "status": "passed",
+      "exDate": "2014-08-27",
+      "subject": "Annual General Meeting / Dividend - Rs 12/- Per Share",
+      "expected_factor": 0.995672,
+      "actual_factor": 0.995671,
+      "rel_error": 0.0
+    }
+  ],
+  "sma_discontinuity_checks": [
+    {
+      "symbol": "HAL",
+      "exDate": "2023-09-28",
+      "subject": "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 5/- Per Share",
+      "raw_sma_jump": 0.998629,
+      "adj_sma_jump": 1.001683,
+      "adjusted_smoother": false
+    },
+    {
+      "symbol": "ANUP",
+      "exDate": "2024-04-23",
+      "subject": "Bonus 1:1",
+      "raw_sma_jump": 1.000172,
+      "adj_sma_jump": 1.003817,
+      "adjusted_smoother": false
+    },
+    {
+      "symbol": "PTL",
+      "exDate": "2021-12-23",
+      "subject": " Face Value Split (Sub-Division) - From Rs 2/- Per Share To Re 1/- Per Share",
+      "raw_sma_jump": 0.99915,
+      "adj_sma_jump": 1.002945,
+      "adjusted_smoother": false
+    }
+  ],
+  "generated_at": "2026-02-10T02:31:23.924674"
+}

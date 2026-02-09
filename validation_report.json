@@ -1,0 +1,2764 @@
+{
+  "validation_date": "2026-02-10T02:33:23.627677",
+  "tolerance_pct": 5.0,
+  "samples_per_year": 20,
+  "results_by_year": {
+    "2014": [
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "NATHSEED",
+        "year": 2014
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "OSWALMIN",
+        "year": 2014
+      },
+      {
+        "status": "compared",
+        "symbol": "TRF",
+        "year": 2014,
+        "total_dates": 181,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "NAHARCAP",
+        "year": 2014,
+        "total_dates": 239,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.2925068712303744e-05,
+        "mean_pct_diff": 1.195733151177133e-05,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TATASTEEL",
+        "year": 2014,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.96082719638322,
+        "mean_pct_diff": 4.960793404817635,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MAGNUM",
+        "year": 2014,
+        "total_dates": 158,
+        "discrepancy_count": 1,
+        "max_pct_diff": 7.812527347100019,
+        "mean_pct_diff": 0.15734557687889714,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2014-12-04",
+            "our_adj_close": 3.289774179458618,
+            "yf_adj_close": 3.0513839721679688,
+            "pct_diff": 7.812527347100019
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "UMESLTD",
+        "year": 2014,
+        "total_dates": 169,
+        "discrepancy_count": 2,
+        "max_pct_diff": 7.4999988079071045,
+        "mean_pct_diff": 0.1035502676427717,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2014-12-03",
+            "our_adj_close": 3.700000047683716,
+            "yf_adj_close": 4.0,
+            "pct_diff": 7.4999988079071045
+          },
+          {
+            "date": "2014-12-09",
+            "our_adj_close": 3.799999952316284,
+            "yf_adj_close": 4.0,
+            "pct_diff": 5.0000011920928955
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "KOTHARIPRO",
+        "year": 2014,
+        "total_dates": 174,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.74646879640674e-05,
+        "mean_pct_diff": 9.081303975436715e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "COMPUSOFT",
+        "year": 2014,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.123636337511405e-05,
+        "mean_pct_diff": 9.008663705885418e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "TATAGLOBAL",
+        "year": 2014
+      },
+      {
+        "status": "compared",
+        "symbol": "IFCI",
+        "year": 2014,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.220189846897899e-05,
+        "mean_pct_diff": 3.0726059306881047e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "RADICO",
+        "year": 2014,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.268148112422168e-05,
+        "mean_pct_diff": 1.0062679591533223e-05,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "RJL",
+        "year": 2014
+      },
+      {
+        "status": "compared",
+        "symbol": "ADANIENT",
+        "year": 2014,
+        "total_dates": 242,
+        "discrepancy_count": 242,
+        "max_pct_diff": 268.94906244487413,
+        "mean_pct_diff": 266.38284047108715,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2014-01-01",
+            "our_adj_close": 140.3083038330078,
+            "yf_adj_close": 38.02919006347656,
+            "pct_diff": 268.9489668299843
+          },
+          {
+            "date": "2014-01-02",
+            "our_adj_close": 133.31246948242188,
+            "yf_adj_close": 36.13303756713867,
+            "pct_diff": 268.94896875114483
+          },
+          {
+            "date": "2014-01-03",
+            "our_adj_close": 129.65792846679688,
+            "yf_adj_close": 35.14250183105469,
+            "pct_diff": 268.9490551643677
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "SADBHAV",
+        "year": 2014,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3028148572548396e-05,
+        "mean_pct_diff": 5.650385410250245e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "AIL",
+        "year": 2014
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "HINDMOTORS",
+        "year": 2014
+      },
+      {
+        "status": "compared",
+        "symbol": "UNIONBANK",
+        "year": 2014,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.058252878801117e-05,
+        "mean_pct_diff": 4.769250033176495e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GODREJCP",
+        "year": 2014,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.145049800182693e-05,
+        "mean_pct_diff": 1.2345739765448082e-05,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SIYSIL",
+        "year": 2014,
+        "total_dates": 230,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.4692324397445753,
+        "mean_pct_diff": 2.469191285524564,
+        "within_tolerance": true
+      }
+    ],
+    "2015": [
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "KOTAKPSUBK",
+        "year": 2015
+      },
+      {
+        "status": "compared",
+        "symbol": "AROGRANITE",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.6306299877880106,
+        "mean_pct_diff": 0.004116832871749539,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "MMWL",
+        "year": 2015
+      },
+      {
+        "status": "compared",
+        "symbol": "PENINLAND",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "ALOKTEXT",
+        "year": 2015
+      },
+      {
+        "status": "compared",
+        "symbol": "TIMETECHNO",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.3875927051367379,
+        "mean_pct_diff": 0.0031338566331106186,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "FILATEX",
+        "year": 2015,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.2622323142919356e-05,
+        "mean_pct_diff": 6.8531696925299644e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "TATAMTRDVR",
+        "year": 2015
+      },
+      {
+        "status": "compared",
+        "symbol": "XPROINDIA",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3556163252220434e-05,
+        "mean_pct_diff": 5.157563841390929e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "DYNAMATECH",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.1072491109089895,
+        "mean_pct_diff": 0.031458035342500426,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MANAKALUCO",
+        "year": 2015,
+        "total_dates": 157,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.170769765901073e-05,
+        "mean_pct_diff": 2.786154082510239e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "VIDEOIND",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.5751170078119292,
+        "mean_pct_diff": 0.004290186767327644,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "LCCINFOTEC",
+        "year": 2015,
+        "total_dates": 119,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "LGBBROSLTD",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.5560590498219612,
+        "mean_pct_diff": 0.0022670264057791083,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "CENTENKA",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 1,
+        "max_pct_diff": 6.2433419978158256,
+        "mean_pct_diff": 0.03019002829098397,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2015-08-12",
+            "our_adj_close": 169.70797729492188,
+            "yf_adj_close": 181.0089874267578,
+            "pct_diff": 6.2433419978158256
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "JINDALPHOT",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 246,
+        "max_pct_diff": 10.420055027435382,
+        "mean_pct_diff": 9.93777789177505,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2015-01-01",
+            "our_adj_close": 119.34854888916016,
+            "yf_adj_close": 108.55758666992188,
+            "pct_diff": 9.940311451514738
+          },
+          {
+            "date": "2015-01-02",
+            "our_adj_close": 121.68708038330078,
+            "yf_adj_close": 110.68467712402344,
+            "pct_diff": 9.940312918787328
+          },
+          {
+            "date": "2015-01-05",
+            "our_adj_close": 125.19487762451172,
+            "yf_adj_close": 113.87531280517578,
+            "pct_diff": 9.940315016918618
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "VASCONEQ",
+        "year": 2015,
+        "total_dates": 244,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.8179928649178523,
+        "mean_pct_diff": 0.2674858527896688,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "LOVABLE",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.2489561374676664e-05,
+        "mean_pct_diff": 6.981569940817087e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KOLTEPATIL",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.1870667979454896e-05,
+        "mean_pct_diff": 7.227226493906464e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KANSAINER",
+        "year": 2015,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.340866368828182,
+        "mean_pct_diff": 2.3408354972664505,
+        "within_tolerance": true
+      }
+    ],
+    "2016": [
+      {
+        "status": "compared",
+        "symbol": "THERMAX",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.552414252068604e-05,
+        "mean_pct_diff": 7.274400994076106e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ESTER",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.0172150220296924e-05,
+        "mean_pct_diff": 6.601070853846224e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SKMEGGPROD",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3381984227916356e-05,
+        "mean_pct_diff": 5.770788992440047e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MTNL",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SHREEPUSHK",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.915130069216848e-05,
+        "mean_pct_diff": 6.814923969737692e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "DHARSUGAR",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GVKPIL",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "STCINDIA",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ZICOM",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "ZENITHBIR",
+        "year": 2016
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "KOTAKPSUBK",
+        "year": 2016
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "HARITASEAT",
+        "year": 2016
+      },
+      {
+        "status": "compared",
+        "symbol": "ORBITCORP",
+        "year": 2016,
+        "total_dates": 239,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "AUTOAXLES",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.3237806965459366e-05,
+        "mean_pct_diff": 9.785726716221829e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SGL",
+        "year": 2016,
+        "total_dates": 238,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SUPERHOUSE",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.104726780938551e-05,
+        "mean_pct_diff": 1.033647059604926e-05,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GODFRYPHLP",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.9994130148729892e-05,
+        "mean_pct_diff": 7.465618937085933e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "APARINDS",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.058463508676677e-05,
+        "mean_pct_diff": 6.864819207071491e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "BAYERCROP",
+        "year": 2016,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.594602459973383e-05,
+        "mean_pct_diff": 9.54464283092579e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "DISHMAN",
+        "year": 2016
+      }
+    ],
+    "2017": [
+      {
+        "status": "compared",
+        "symbol": "MANINDS",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 248,
+        "max_pct_diff": 11.921051837278608,
+        "mean_pct_diff": 11.921030325454716,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2017-01-02",
+            "our_adj_close": 34.148704528808594,
+            "yf_adj_close": 38.77055358886719,
+            "pct_diff": 11.92102931794541
+          },
+          {
+            "date": "2017-01-03",
+            "our_adj_close": 34.904205322265625,
+            "yf_adj_close": 39.62831115722656,
+            "pct_diff": 11.921037503258466
+          },
+          {
+            "date": "2017-01-04",
+            "our_adj_close": 34.97975540161133,
+            "yf_adj_close": 39.71408462524414,
+            "pct_diff": 11.921033226140256
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "BALRAMCHIN",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.4367023987586105e-05,
+        "mean_pct_diff": 9.777222692316535e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "PSUBNKBEES",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 248,
+        "max_pct_diff": 900.0000837934642,
+        "mean_pct_diff": 899.9999971922045,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2017-01-02",
+            "our_adj_close": 326.4100036621094,
+            "yf_adj_close": 32.64099884033203,
+            "pct_diff": 900.0000467473104
+          },
+          {
+            "date": "2017-01-03",
+            "our_adj_close": 327.5,
+            "yf_adj_close": 32.75,
+            "pct_diff": 900.0
+          },
+          {
+            "date": "2017-01-04",
+            "our_adj_close": 324.8399963378906,
+            "yf_adj_close": 32.48400115966797,
+            "pct_diff": 899.9999530267562
+          }
+        ]
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "GAL",
+        "year": 2017
+      },
+      {
+        "status": "compared",
+        "symbol": "ZYDUSWELL",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.847013184233355e-05,
+        "mean_pct_diff": 6.583053789035816e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SILINV",
+        "year": 2017,
+        "total_dates": 215,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.361330226269065e-05,
+        "mean_pct_diff": 8.833506853406983e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ATUL",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.539625253935288e-05,
+        "mean_pct_diff": 1.07379225108083e-05,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KOKUYOCMLN",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1125668430159284e-05,
+        "mean_pct_diff": 2.8786452616213974e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KTKBANK",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.811843258858853e-05,
+        "mean_pct_diff": 6.491121499149607e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TRIGYN",
+        "year": 2017,
+        "total_dates": 145,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1891125332104267e-05,
+        "mean_pct_diff": 2.7256877384300685e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MOTOGENFIN",
+        "year": 2017,
+        "total_dates": 89,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "RSYSTEMS",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.4178180618504455e-05,
+        "mean_pct_diff": 5.513665356538259e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "PITTILAM",
+        "year": 2017
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "HDFCSENETF",
+        "year": 2017
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "RUCHISOYA",
+        "year": 2017
+      },
+      {
+        "status": "compared",
+        "symbol": "CORDSCABLE",
+        "year": 2017,
+        "total_dates": 215,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "PTC",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.516768774094262e-05,
+        "mean_pct_diff": 9.231634911546733e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "COX&KINGS",
+        "year": 2017
+      },
+      {
+        "status": "compared",
+        "symbol": "AHLUCONT",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 168,
+        "max_pct_diff": 281.97030137215177,
+        "mean_pct_diff": 134.66585633209064,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2017-01-02",
+            "our_adj_close": 259.80535888671875,
+            "yf_adj_close": 104.11136627197266,
+            "pct_diff": 149.54562425779997
+          },
+          {
+            "date": "2017-01-03",
+            "our_adj_close": 255.5731964111328,
+            "yf_adj_close": 104.11136627197266,
+            "pct_diff": 145.4805902205651
+          },
+          {
+            "date": "2017-01-04",
+            "our_adj_close": 249.59837341308594,
+            "yf_adj_close": 104.11136627197266,
+            "pct_diff": 139.74171346580354
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "SADBHIN",
+        "year": 2017,
+        "total_dates": 248,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1269683064957102e-05,
+        "mean_pct_diff": 2.555293162045836e-06,
+        "within_tolerance": true
+      }
+    ],
+    "2018": [
+      {
+        "status": "compared",
+        "symbol": "CUB",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.0116272906437172e-05,
+        "mean_pct_diff": 6.518027754450012e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "WSI",
+        "year": 2018,
+        "total_dates": 119,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "VGUARD",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.0410744460813104e-05,
+        "mean_pct_diff": 4.7769280243414135e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "INDOTHAI",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.12846346976632e-05,
+        "mean_pct_diff": 5.713576543946024e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "PSUBNKBEES",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 246,
+        "max_pct_diff": 900.0000942948326,
+        "mean_pct_diff": 900.0000006092201,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2018-01-01",
+            "our_adj_close": 410.8699951171875,
+            "yf_adj_close": 41.08700180053711,
+            "pct_diff": 899.9999442933712
+          },
+          {
+            "date": "2018-01-02",
+            "our_adj_close": 404.8800048828125,
+            "yf_adj_close": 40.487998962402344,
+            "pct_diff": 900.0000376871899
+          },
+          {
+            "date": "2018-01-03",
+            "our_adj_close": 404.6000061035156,
+            "yf_adj_close": 40.459999084472656,
+            "pct_diff": 900.0000377132709
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "JAMNAAUTO",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.000936522335153,
+        "mean_pct_diff": 1.0009008443591498,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TTL",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.644333851178778,
+        "mean_pct_diff": 2.6443178987738185,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TRITURBINE",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.438473057433112e-05,
+        "mean_pct_diff": 7.117138452020012e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TULSI",
+        "year": 2018,
+        "total_dates": 52,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KNRCON",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.240275356724646e-05,
+        "mean_pct_diff": 4.567450110600794e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KSL",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.6506754362790875e-05,
+        "mean_pct_diff": 7.566750389493531e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "MANGCHEFER",
+        "year": 2018
+      },
+      {
+        "status": "compared",
+        "symbol": "XCHANGING",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.2334323153311615e-05,
+        "mean_pct_diff": 5.320239801053975e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SHAKTIPUMP",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.3463032328523994e-05,
+        "mean_pct_diff": 6.570275208370327e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "NAKODA",
+        "year": 2018,
+        "total_dates": 10,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "JAYBARMARU",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.8295034589265035e-05,
+        "mean_pct_diff": 7.4864656490975465e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "VENUSREM",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 245,
+        "max_pct_diff": 72.70238408884828,
+        "mean_pct_diff": 52.54792303327386,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2018-01-01",
+            "our_adj_close": 103.9000015258789,
+            "yf_adj_close": 127.8499984741211,
+            "pct_diff": 18.732887942184885
+          },
+          {
+            "date": "2018-01-02",
+            "our_adj_close": 103.25,
+            "yf_adj_close": 127.8499984741211,
+            "pct_diff": 19.2412974327102
+          },
+          {
+            "date": "2018-01-03",
+            "our_adj_close": 103.75,
+            "yf_adj_close": 127.8499984741211,
+            "pct_diff": 18.850214127299598
+          }
+        ]
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "DFMFOODS",
+        "year": 2018
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "IBVENTURES",
+        "year": 2018
+      },
+      {
+        "status": "compared",
+        "symbol": "MUKTAARTS",
+        "year": 2018,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      }
+    ],
+    "2019": [
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "NAGAROIL",
+        "year": 2019
+      },
+      {
+        "status": "compared",
+        "symbol": "XCHANGING",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.2385147112325545e-05,
+        "mean_pct_diff": 3.9025434691565956e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GOLDBEES",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 236,
+        "max_pct_diff": 9900.000779377253,
+        "mean_pct_diff": 9654.545433445426,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2019-01-01",
+            "our_adj_close": 2817.800048828125,
+            "yf_adj_close": 28.17799949645996,
+            "pct_diff": 9900.000351984281
+          },
+          {
+            "date": "2019-01-02",
+            "our_adj_close": 2828.85009765625,
+            "yf_adj_close": 28.28849983215332,
+            "pct_diff": 9900.000404549264
+          },
+          {
+            "date": "2019-01-03",
+            "our_adj_close": 2847.050048828125,
+            "yf_adj_close": 28.470500946044922,
+            "pct_diff": 9899.999839214746
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "MANAKSTEEL",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.4329020771356545,
+        "mean_pct_diff": 0.0017888515584117955,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "PAEL",
+        "year": 2019
+      },
+      {
+        "status": "compared",
+        "symbol": "SHREDIGCEM",
+        "year": 2019,
+        "total_dates": 89,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.962985788927559e-05,
+        "mean_pct_diff": 8.631080031431761e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TATAELXSI",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.777120302833462,
+        "mean_pct_diff": 0.6444240600268332,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MANPASAND",
+        "year": 2019,
+        "total_dates": 177,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "EQ30",
+        "year": 2019,
+        "total_dates": 202,
+        "discrepancy_count": 1,
+        "max_pct_diff": 5.246913580246913,
+        "mean_pct_diff": 0.026682538796330587,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2019-11-21",
+            "our_adj_close": 341.0,
+            "yf_adj_close": 324.0,
+            "pct_diff": 5.246913580246913
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "MAZDA",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.4929824236617425e-05,
+        "mean_pct_diff": 1.0136153798280586e-05,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "HSCL",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3749006252519623e-05,
+        "mean_pct_diff": 6.460413674283541e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GSFC",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.9000769777099116e-05,
+        "mean_pct_diff": 7.293264769028297e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SIYSIL",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.4692249761504415,
+        "mean_pct_diff": 2.1623252768033385,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "REDINGTON",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.2401509578338195,
+        "mean_pct_diff": 1.2401230099701155,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "TATACOFFEE",
+        "year": 2019
+      },
+      {
+        "status": "compared",
+        "symbol": "JKPAPER",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.261959774527716e-05,
+        "mean_pct_diff": 6.602766746357675e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "DEEPAKFERT",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.1342344147532666,
+        "mean_pct_diff": 3.1341998985508064,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "FCONSUMER",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "CHOLAFIN",
+        "year": 2019,
+        "total_dates": 242,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.475606513610996e-05,
+        "mean_pct_diff": 8.332871583003443e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "METROPOLIS",
+        "year": 2019,
+        "total_dates": 172,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3387490966581614e-05,
+        "mean_pct_diff": 5.331013673985955e-06,
+        "within_tolerance": true
+      }
+    ],
+    "2020": [
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "UMANGDAIRY",
+        "year": 2020
+      },
+      {
+        "status": "compared",
+        "symbol": "MUNJALSHOW",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.883650310868229e-05,
+        "mean_pct_diff": 5.02031356832986e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "HBSL",
+        "year": 2020,
+        "total_dates": 2,
+        "discrepancy_count": 0,
+        "max_pct_diff": 9.158081956957564e-06,
+        "mean_pct_diff": 4.579040978478782e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "ADANITRANS",
+        "year": 2020
+      },
+      {
+        "status": "compared",
+        "symbol": "WEIZMANIND",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.3334302292633265e-05,
+        "mean_pct_diff": 7.974024194623231e-07,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "GEPIL",
+        "year": 2020
+      },
+      {
+        "status": "compared",
+        "symbol": "BRITANNIA",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.60637597755389e-05,
+        "mean_pct_diff": 6.010652959649094e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "IGPL",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3822206298400766e-05,
+        "mean_pct_diff": 7.004424430426293e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ADANIENT",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.080542975165665,
+        "mean_pct_diff": 3.063723534540485,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GREAVESCOT",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.188782010663308e-05,
+        "mean_pct_diff": 5.744662694305698e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SUMMITSEC",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "PETRONET",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3741786232280614e-05,
+        "mean_pct_diff": 5.0399250795464e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ESSARSHPNG",
+        "year": 2020,
+        "total_dates": 177,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "NPBET",
+        "year": 2020,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MARICO",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.0064717310482546e-05,
+        "mean_pct_diff": 6.731579748724024e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GPTINFRA",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.381867261935427e-05,
+        "mean_pct_diff": 7.67652955872795e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "EIMCOELECO",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3021863633674265e-05,
+        "mean_pct_diff": 6.587543391688893e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KAUSHALYA",
+        "year": 2020,
+        "total_dates": 51,
+        "discrepancy_count": 51,
+        "max_pct_diff": 99.00000002649095,
+        "mean_pct_diff": 99.00000000363468,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2020-03-04",
+            "our_adj_close": 0.4000000059604645,
+            "yf_adj_close": 40.0,
+            "pct_diff": 98.99999998509884
+          },
+          {
+            "date": "2020-03-05",
+            "our_adj_close": 0.44999998807907104,
+            "yf_adj_close": 45.0,
+            "pct_diff": 99.00000002649095
+          },
+          {
+            "date": "2020-03-06",
+            "our_adj_close": 0.44999998807907104,
+            "yf_adj_close": 45.0,
+            "pct_diff": 99.00000002649095
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "ULTRACEMCO",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3734424135820717e-05,
+        "mean_pct_diff": 5.80786705418428e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "JCHAC",
+        "year": 2020,
+        "total_dates": 251,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.2133659785405307e-05,
+        "mean_pct_diff": 3.149552018138511e-06,
+        "within_tolerance": true
+      }
+    ],
+    "2021": [
+      {
+        "status": "compared",
+        "symbol": "PITTIENG",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.2226994920810756e-05,
+        "mean_pct_diff": 7.572931194960471e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "THYROCARE",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.9183171826364881,
+        "mean_pct_diff": 0.003693786453549239,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TIRUMALCHM",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.2056991469557965e-05,
+        "mean_pct_diff": 3.352837136587949e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "HISARMETAL",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.372601388968305e-05,
+        "mean_pct_diff": 5.43052977802505e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "IDBIGOLD",
+        "year": 2021
+      },
+      {
+        "status": "compared",
+        "symbol": "ADVENZYMES",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.7159961581329012e-05,
+        "mean_pct_diff": 5.291526973221619e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "AVTNPL",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.1012742825899736e-05,
+        "mean_pct_diff": 8.577696497155297e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SHANTIGEAR",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.186302468046166e-05,
+        "mean_pct_diff": 7.110327144782204e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "AFFLE",
+        "year": 2021,
+        "total_dates": 184,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1857934357321303e-05,
+        "mean_pct_diff": 2.2940378541628957e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "INGERRAND",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.380349868464953e-05,
+        "mean_pct_diff": 7.467922982395369e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "EXXARO",
+        "year": 2021,
+        "total_dates": 86,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1857934357321303e-05,
+        "mean_pct_diff": 3.291918963434594e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "PODDARMENT",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.7891347279280713e-05,
+        "mean_pct_diff": 4.184570954675187e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SAFARI",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.433411913611606e-05,
+        "mean_pct_diff": 6.3963757343858995e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "CESCVENT",
+        "year": 2021
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "MAESGETF",
+        "year": 2021
+      },
+      {
+        "status": "compared",
+        "symbol": "TECHM",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.8378957095552826,
+        "mean_pct_diff": 2.2258034319355255,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ARMANFIN",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "IIFLWAM",
+        "year": 2021
+      },
+      {
+        "status": "compared",
+        "symbol": "SURANAT&P",
+        "year": 2021,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TANLA",
+        "year": 2021,
+        "total_dates": 177,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.141795882997118e-05,
+        "mean_pct_diff": 6.909475360729583e-06,
+        "within_tolerance": true
+      }
+    ],
+    "2022": [
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "LGBFORGE",
+        "year": 2022
+      },
+      {
+        "status": "compared",
+        "symbol": "BBTC",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.327210713454152e-05,
+        "mean_pct_diff": 4.57241960213093e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "INDIANHUME",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.9007078878457555,
+        "mean_pct_diff": 0.9006953969278295,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "IGARASHI",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.191731338947103e-05,
+        "mean_pct_diff": 2.670873986414791e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SNOWMAN",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1926723404077686e-05,
+        "mean_pct_diff": 3.0795023585299506e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "PBAINFRA",
+        "year": 2022
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "ICICIBANKN",
+        "year": 2022
+      },
+      {
+        "status": "compared",
+        "symbol": "SHAHALLOYS",
+        "year": 2022,
+        "total_dates": 248,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "INDLMETER",
+        "year": 2022,
+        "total_dates": 16,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KEI",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3225906547777895e-05,
+        "mean_pct_diff": 5.469270241353691e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SONACOMS",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.3405796510480465,
+        "mean_pct_diff": 0.005391997234930026,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ARTEMISMED",
+        "year": 2022,
+        "total_dates": 247,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.3712983326406335,
+        "mean_pct_diff": 0.371285370934855,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "IBREALEST",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "INDIANCARD",
+        "year": 2022,
+        "total_dates": 199,
+        "discrepancy_count": 0,
+        "max_pct_diff": 6.467254479737833e-06,
+        "mean_pct_diff": 3.249876622983836e-08,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "AXISHCETF",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SURYODAY",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ANUP",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.2794495635088731,
+        "mean_pct_diff": 0.2794340225646644,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "UCALFUEL",
+        "year": 2022
+      },
+      {
+        "status": "compared",
+        "symbol": "SPCENET",
+        "year": 2022,
+        "total_dates": 27,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "DHUNINV",
+        "year": 2022,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.0959982691995332e-05,
+        "mean_pct_diff": 3.069811398111393e-06,
+        "within_tolerance": true
+      }
+    ],
+    "2023": [
+      {
+        "status": "compared",
+        "symbol": "SAMBHAAV",
+        "year": 2023,
+        "total_dates": 160,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "LICNETFGSC",
+        "year": 2023,
+        "total_dates": 245,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SHYAMTEL",
+        "year": 2023,
+        "total_dates": 153,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.575162095024233,
+        "mean_pct_diff": 0.029903020228916555,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "INDOWIND",
+        "year": 2023,
+        "total_dates": 103,
+        "discrepancy_count": 103,
+        "max_pct_diff": 6.116847991943359,
+        "mean_pct_diff": 6.116841668341253,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2023-01-09",
+            "our_adj_close": 15.884452819824219,
+            "yf_adj_close": 16.919384002685547,
+            "pct_diff": 6.116837248312691
+          },
+          {
+            "date": "2023-01-10",
+            "our_adj_close": 15.094618797302246,
+            "yf_adj_close": 16.078088760375977,
+            "pct_diff": 6.116833771296661
+          },
+          {
+            "date": "2023-01-11",
+            "our_adj_close": 14.348663330078125,
+            "yf_adj_close": 15.28353214263916,
+            "pct_diff": 6.116837415827896
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "FLAIR",
+        "year": 2023,
+        "total_dates": 20,
+        "discrepancy_count": 0,
+        "max_pct_diff": 8.794691102305476e-06,
+        "mean_pct_diff": 3.2867662518083465e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "RAYMOND",
+        "year": 2023,
+        "total_dates": 245,
+        "discrepancy_count": 245,
+        "max_pct_diff": 79.73198053261615,
+        "mean_pct_diff": 79.73197821125551,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2023-01-02",
+            "our_adj_close": 302.1730041503906,
+            "yf_adj_close": 1490.885498046875,
+            "pct_diff": 79.73197777118025
+          },
+          {
+            "date": "2023-01-03",
+            "our_adj_close": 301.29638671875,
+            "yf_adj_close": 1486.5604248046875,
+            "pct_diff": 79.73197848595115
+          },
+          {
+            "date": "2023-01-04",
+            "our_adj_close": 294.94842529296875,
+            "yf_adj_close": 1455.2403564453125,
+            "pct_diff": 79.7319787080786
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "NDRAUTO",
+        "year": 2023,
+        "total_dates": 116,
+        "discrepancy_count": 116,
+        "max_pct_diff": 100.00002255460952,
+        "mean_pct_diff": 99.99999269497953,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2023-01-02",
+            "our_adj_close": 288.234375,
+            "yf_adj_close": 144.11717224121094,
+            "pct_diff": 100.00002117553213
+          },
+          {
+            "date": "2023-01-03",
+            "our_adj_close": 284.20538330078125,
+            "yf_adj_close": 142.1027069091797,
+            "pct_diff": 99.99997852428093
+          },
+          {
+            "date": "2023-01-04",
+            "our_adj_close": 276.0732116699219,
+            "yf_adj_close": 138.03660583496094,
+            "pct_diff": 100.0
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "ZENSARTECH",
+        "year": 2023,
+        "total_dates": 245,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3756896627090843e-05,
+        "mean_pct_diff": 5.570264014987286e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "GSCLCEMENT",
+        "year": 2023
+      },
+      {
+        "status": "compared",
+        "symbol": "VIMTALABS",
+        "year": 2023,
+        "total_dates": 245,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.1932508407827098e-05,
+        "mean_pct_diff": 6.158001672910084e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "PAISALO",
+        "year": 2023,
+        "total_dates": 245,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1824136775938639e-05,
+        "mean_pct_diff": 3.348732978228549e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "V2RETAIL",
+        "year": 2023,
+        "total_dates": 115,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SBCL",
+        "year": 2023,
+        "total_dates": 245,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.3028594029491568e-05,
+        "mean_pct_diff": 5.066705825149777e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TPLPLASTEH",
+        "year": 2023,
+        "total_dates": 178,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1830620532609804e-05,
+        "mean_pct_diff": 3.912367828677038e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "HIMATSEIDE",
+        "year": 2023,
+        "total_dates": 245,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SUMICHEM",
+        "year": 2023,
+        "total_dates": 245,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.611299852509668e-05,
+        "mean_pct_diff": 2.8977082907847722e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ARENTERP",
+        "year": 2023,
+        "total_dates": 113,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "PENINLAND",
+        "year": 2023,
+        "total_dates": 241,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MARSHALL",
+        "year": 2023,
+        "total_dates": 125,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.0194349149934e-05,
+        "mean_pct_diff": 1.73788971729079e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "EBBETF0425",
+        "year": 2023,
+        "total_dates": 230,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      }
+    ],
+    "2024": [
+      {
+        "status": "compared",
+        "symbol": "SHRENIK",
+        "year": 2024,
+        "total_dates": 75,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SPCENET",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ABAN",
+        "year": 2024,
+        "total_dates": 110,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "NV20",
+        "year": 2024,
+        "total_dates": 189,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "BAJFINANCE",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.8659955800162695e-05,
+        "mean_pct_diff": 4.523233904768103e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KAJARIACER",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.1432296821022426e-05,
+        "mean_pct_diff": 4.385928501673116e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MUKTAARTS",
+        "year": 2024,
+        "total_dates": 110,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "OMAXAUTO",
+        "year": 2024,
+        "total_dates": 114,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.0831298944609063e-05,
+        "mean_pct_diff": 7.6006334785548e-07,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "IOC",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.2371247019843911e-05,
+        "mean_pct_diff": 3.5032362224013645e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "BBNPPGOLD",
+        "year": 2024,
+        "total_dates": 240,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "BAJAJ-AUTO",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.41290009525007637,
+        "mean_pct_diff": 0.0016795433496196535,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GRSE",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.239619336380634e-05,
+        "mean_pct_diff": 4.185730381328711e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "NPBET",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.7199850457430519,
+        "mean_pct_diff": 0.006991809129036796,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MAWANASUG",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.6778278572108094e-05,
+        "mean_pct_diff": 2.880660747990719e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "WINDLAS",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.044579017142039,
+        "mean_pct_diff": 0.004246256167244061,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MOTILALOFS",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1892290572898016e-05,
+        "mean_pct_diff": 2.176615185617867e-06,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ROSSTECH",
+        "year": 2024,
+        "total_dates": 6,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "AFFORDABLE",
+        "year": 2024,
+        "total_dates": 45,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SADHNANIQ",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 165,
+        "max_pct_diff": 26.068949643764856,
+        "mean_pct_diff": 16.371648615766535,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2024-01-01",
+            "our_adj_close": 69.20906829833984,
+            "yf_adj_close": 90.94982147216797,
+            "pct_diff": 23.904118580904665
+          },
+          {
+            "date": "2024-01-02",
+            "our_adj_close": 70.6137466430664,
+            "yf_adj_close": 92.7957534790039,
+            "pct_diff": 23.904118458347806
+          },
+          {
+            "date": "2024-01-03",
+            "our_adj_close": 70.4618911743164,
+            "yf_adj_close": 92.59619903564453,
+            "pct_diff": 23.90412143462564
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "HGINFRA",
+        "year": 2024,
+        "total_dates": 246,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.1583601049659592e-05,
+        "mean_pct_diff": 1.4080798167804942e-06,
+        "within_tolerance": true
+      }
+    ],
+    "2025": [
+      {
+        "status": "compared",
+        "symbol": "IREDA",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 1,
+        "max_pct_diff": 5.638385263208582,
+        "mean_pct_diff": 0.02415225812717744,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2025-03-18",
+            "our_adj_close": 145.9499969482422,
+            "yf_adj_close": 138.16000366210938,
+            "pct_diff": 5.638385263208582
+          }
+        ]
+      },
+      {
+        "status": "compared",
+        "symbol": "VMART",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.292281371814227,
+        "mean_pct_diff": 0.023323592851553353,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "NOCIL",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.552620726370223,
+        "mean_pct_diff": 0.014405860772626438,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "DYCL",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 4.027692311459261,
+        "mean_pct_diff": 0.016970812809793876,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "OSWALAGRO",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.881736628429844,
+        "mean_pct_diff": 0.01626513197842515,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "HUHTAMAKI",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.7295568602335653,
+        "mean_pct_diff": 0.00420093362833077,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GUFICBIO",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.480219057667808,
+        "mean_pct_diff": 0.013215514260329202,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "PRAKASH",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.695097285910109,
+        "mean_pct_diff": 0.012511919022344211,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "BANKETFADD",
+        "year": 2025,
+        "total_dates": 237,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KFINTECH",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 2.452236182308989,
+        "mean_pct_diff": 0.010486222715093004,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ESAFSFB",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.905487821498916,
+        "mean_pct_diff": 0.008338823142742102,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TNTELE",
+        "year": 2025,
+        "total_dates": 128,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.3057659525385639,
+        "mean_pct_diff": 0.01020129650420753,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "FORCEMOT",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 1,
+        "max_pct_diff": 5.314361912233066,
+        "mean_pct_diff": 0.0257815787718111,
+        "within_tolerance": false,
+        "sample_discrepancies": [
+          {
+            "date": "2025-03-18",
+            "our_adj_close": 7446.60986328125,
+            "yf_adj_close": 7070.83984375,
+            "pct_diff": 5.314361912233066
+          }
+        ]
+      },
+      {
+        "status": "yahoo_fetch_failed",
+        "symbol": "HOVS",
+        "year": 2025
+      },
+      {
+        "status": "compared",
+        "symbol": "PHARMABEES",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "VIDHIING",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.8594710293015559,
+        "mean_pct_diff": 0.0038693066048698906,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "GAYAHWS",
+        "year": 2025,
+        "total_dates": 2,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SPENCERS",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 3.497132033066092,
+        "mean_pct_diff": 0.01610224675434236,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "BLUECHIP",
+        "year": 2025,
+        "total_dates": 2,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "CANBK",
+        "year": 2025,
+        "total_dates": 249,
+        "discrepancy_count": 0,
+        "max_pct_diff": 1.733547062425705,
+        "mean_pct_diff": 0.007751446682641033,
+        "within_tolerance": true
+      }
+    ],
+    "2026": [
+      {
+        "status": "compared",
+        "symbol": "BETA",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "STARTECK",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TARIL",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KTKBANK",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ARTEMISMED",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "NPBET",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "RATNAVEER",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ENRIN",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "LIBERTSHOE",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "ANUHPHR",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "INNOVANA",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "MNC",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "J&KBANK",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "INNOVACAP",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "TNIDETF",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "HINDOILEXP",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "BAYERCROP",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "BLKASHYAP",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "KAMATHOTEL",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      },
+      {
+        "status": "compared",
+        "symbol": "SUPREME",
+        "year": 2026,
+        "total_dates": 26,
+        "discrepancy_count": 0,
+        "max_pct_diff": 0.0,
+        "mean_pct_diff": 0.0,
+        "within_tolerance": true
+      }
+    ]
+  },
+  "summary": {
+    "total_compared": 222,
+    "total_passed": 203,
+    "total_failed": 19,
+    "total_errors": 38,
+    "pass_rate_pct": 91.44
+  }
+}
