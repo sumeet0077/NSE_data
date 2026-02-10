@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy requirements (if you had a requirements.txt, checking manually for now)
 # We will install dependencies directly
-RUN pip install --no-cache-dir pandas requests pyarrow
+RUN pip install --no-cache-dir pandas requests pyarrow yfinance
 
 # Copy the entire project code
 COPY . /app
