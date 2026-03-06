@@ -22,6 +22,7 @@ import logging
 import os
 import random
 import re
+import resource
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,6 +35,7 @@ import pyarrow.dataset as ds
 import yfinance as yf
 
 
+# Default Paths (can be overridden via CLI)
 ORIG_DIR = Path("nse_master_bhav_with_delivery_2014_onwards.parquet")
 OUT_DIR = Path("nse_master_adjusted_2014_onwards.parquet")
 METADATA_PATH = Path("metadata.json")
@@ -387,10 +389,10 @@ def build_manual_factor_series(
                     # Calculate ratio of Open(Ex) / Close(Prev)
                     obs = p_ex_open / p_prev_close
                     
-                    # Only apply if the drop is significant (> 2% drop => factor < 0.98)
-                    # This avoids false positives from normal market gap-downs.
-                    # For a demerger, the price SHOULD drop. A factor > 1.0 (gap up) is not a demerger adjustment.
-                    if obs < 0.98:
+                    # significantly lower than Prev Close, we infer the drop is due to 
+                    # the corporate action value carve-out.
+                    # HINDUNILVR 2025 demerger was ~1.6% (0.984). Use 0.995 threshold.
+                    if obs < 0.995:
                         f = obs
                     else:
                          # Use 1.0 (no adjustment) if price didn't drop significantly
@@ -562,7 +564,16 @@ def yf_download_batch(tickers: list[str], start: str, end: str) -> pd.DataFrame 
     return None
 
 
-def main() -> None:
+def main(target_symbol: str | None = None) -> None:
+    # Try to bump open file limit to avoid OSError: Too many open files
+    try:
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        desired = min(4096, hard)
+        if soft < desired:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (desired, hard))
+    except Exception as exc:
+        pass
+
     setup_logging()
 
     if not ORIG_DIR.exists():
@@ -582,7 +593,7 @@ def main() -> None:
 
     # Read only the columns needed to compute factors (avoid loading source_url, etc.)
     # Read only the columns needed to compute factors (avoid loading source_url, etc.)
-    logging.info("Reading base columns (symbol, series, trade_date, open, close, year)...")
+    logging.info("Reading base columns (symbol, series, trade_date, open, high, low, close, year)...")
     # Some partitions use different dictionary index widths for `series`; force string to avoid invalid casts.
     base_schema = pa.schema(
         [
@@ -590,14 +601,17 @@ def main() -> None:
             ("series", pa.string()),
             ("trade_date", pa.timestamp("ms")),
             ("open", pa.float32()),
+            ("high", pa.float32()),
+            ("low", pa.float32()),
             ("close", pa.float32()),
             ("year", pa.int32()),
         ]
     )
     base_ds = ds.dataset(ORIG_DIR, format="parquet", partitioning="hive", schema=base_schema)
-    base = base_ds.to_table(columns=["symbol", "series", "trade_date", "open", "close", "year"]).to_pandas()
+    base = base_ds.to_table(columns=["symbol", "series", "trade_date", "open", "high", "low", "close", "year"]).to_pandas()
     base["trade_date"] = pd.to_datetime(base["trade_date"]).dt.floor("D")
-    base["close"] = pd.to_numeric(base["close"], errors="coerce").astype("float32")
+    for col in ["open", "high", "low", "close"]:
+        base[col] = pd.to_numeric(base[col], errors="coerce").astype("float32")
     base["open"] = pd.to_numeric(base["open"], errors="coerce").astype("float32")
 
     # Validate key uniqueness per partition-year (dataset can include previous-year dates in next-year partition)
@@ -618,10 +632,8 @@ def main() -> None:
     )
 
     # --- Optional: Filter for specific symbols (e.g. for testing) ---
-    import sys
-    target_symbol = None
-    if len(sys.argv) > 1:
-        target_symbol = sys.argv[1].upper()
+    if target_symbol:
+        target_symbol = target_symbol.upper()
         logging.info("Filtering dataset for symbol: %s", target_symbol)
         base = base[base["symbol"] == target_symbol]
         if base.empty:
@@ -655,29 +667,54 @@ def main() -> None:
             logging.warning("Failed to read corporate actions cache %s: %s (will refetch)", CA_CACHE_PATH, exc)
             ca_df = pd.DataFrame()
 
+    # Determine fetch ranges
+    fetch_windows = []
     if ca_df.empty:
-        logging.info("Fetching NSE corporate actions (2014..%s) for manual adjustment fallback...", max_trade_date_dt)
-        ca_records: list[dict[str, Any]] = []
+        logging.info("Cache empty/missing. Fetching complete NSE corporate actions history (2014..%s)", max_trade_date_dt)
         for year in range(2014, max_trade_date_dt.year + 1):
             fd = dt.date(year, 1, 1)
-            td = dt.date(year, 12, 31)
-            if year == max_trade_date_dt.year:
-                td = max_trade_date_dt
-            from_s = fd.strftime("%d-%m-%Y")
-            to_s = td.strftime("%d-%m-%Y")
-            logging.info("NSE CA fetch window %s -> %s", from_s, to_s)
-            try:
-                chunk = fetch_nse_corporate_actions(from_s, to_s)
-                ca_records.extend(chunk)
-                logging.info("  got %d actions", len(chunk))
-            except Exception as exc:
-                logging.error("Failed to fetch NSE corporate actions for %s..%s: %s", from_s, to_s, exc)
-                # Continue; some symbols may still be handled by yfinance or raw fallback.
+            td = dt.date(year, 12, 31) if year < max_trade_date_dt.year else max_trade_date_dt
+            fetch_windows.append((fd, td))
+    else:
+        # Update cache with the last 45 days up to 15 days in the future to catch newly announced actions
+        fd = dt.date.today() - dt.timedelta(days=45)
+        td = dt.date.today() + dt.timedelta(days=15)
+        logging.info("Cache found. Fetching latest NSE corporate actions update window (%s -> %s)", fd, td)
+        fetch_windows.append((fd, td))
+
+    ca_records: list[dict[str, Any]] = []
+    for fd, td in fetch_windows:
+        from_s = fd.strftime("%d-%m-%Y")
+        to_s = td.strftime("%d-%m-%Y")
+        logging.info("NSE CA fetch window %s -> %s", from_s, to_s)
+        try:
+            chunk = fetch_nse_corporate_actions(from_s, to_s)
+            ca_records.extend(chunk)
+            logging.info("  got %d actions", len(chunk))
+        except Exception as exc:
+            logging.error("Failed to fetch NSE corporate actions for %s..%s: %s", from_s, to_s, exc)
+        if len(fetch_windows) > 1:
             time.sleep(random.uniform(1.0, 2.5))
 
-        ca_df = pd.DataFrame(ca_records)
-        if not ca_df.empty:
+    if ca_records:
+        new_ca_df = pd.DataFrame(ca_records)
+        if not new_ca_df.empty:
+            if not ca_df.empty:
+                ca_df = pd.concat([ca_df, new_ca_df], ignore_index=True)
+            else:
+                ca_df = new_ca_df
+            
             try:
+                dedupe_cols = [c for c in ["symbol", "exDate", "subject", "purpose"] if c in ca_df.columns]
+                # Filter out any exact duplicate announcements
+                if dedupe_cols:
+                    ca_df = ca_df.drop_duplicates(subset=dedupe_cols, keep="last").reset_index(drop=True)
+                
+                # Convert object columns to string to prevent PyArrow type crashes
+                for c in ca_df.columns:
+                    if ca_df[c].dtype == 'object':
+                        ca_df[c] = ca_df[c].astype(str)
+                
                 ca_df.to_parquet(
                     CA_CACHE_PATH,
                     engine="pyarrow",
@@ -685,7 +722,7 @@ def main() -> None:
                     compression_level=8,
                     index=False,
                 )
-                logging.info("Saved NSE corporate actions cache to %s", CA_CACHE_PATH)
+                logging.info("Saved/Updated NSE corporate actions cache to %s (total rows=%d)", CA_CACHE_PATH, len(ca_df))
             except Exception as exc:
                 logging.warning("Failed to save corporate actions cache %s: %s", CA_CACHE_PATH, exc)
 
@@ -701,8 +738,12 @@ def main() -> None:
             ca_by_symbol[str(sym)] = grp.to_dict(orient="records")
     logging.info("Corporate actions loaded: total=%d symbols_with_actions=%d", len(ca_df), len(ca_by_symbol))
 
-    # Allocate output adjusted_close
-    adjusted_close = np.empty(len(base), dtype="float32")
+    # Results arrays
+    num_rows = len(base)
+    adjusted_open = np.full(num_rows, np.nan, dtype="float32")
+    adjusted_high = np.full(num_rows, np.nan, dtype="float32")
+    adjusted_low = np.full(num_rows, np.nan, dtype="float32")
+    adjusted_close = np.full(num_rows, np.nan, dtype="float32")
 
     sym_stats: dict[str, dict[str, Any]] = {}
 
@@ -754,106 +795,54 @@ def main() -> None:
             manual_factor: np.ndarray | None = None
             factor: np.ndarray | None = None
 
-            # Method 1: yfinance factor (AdjClose / Close)
-            ticker = f"{sym}.NS"
-            if not should_skip_yfinance(str(sym)) and yf_df is not None and not yf_df.empty:
-                y_close = extract_yf_series(yf_df, ticker, "Close")
-                y_adj = extract_yf_series(yf_df, ticker, "Adj Close")
-                if y_close is not None and y_adj is not None:
-                    y_factor = (y_adj / y_close).replace([np.inf, -np.inf], np.nan).dropna()
-                    if not y_factor.empty:
-                        aligned = y_factor.reindex(
-                            ref_dates,
-                            method="ffill",
-                            tolerance=pd.Timedelta(days=ALIGN_TOLERANCE_DAYS),
-                        )
-                        coverage = float(aligned.notna().mean()) if len(aligned) else 0.0
-                        if coverage >= 0.90:
-                            y_vals = aligned.to_numpy(dtype="float32")
-
-                            # If NSE actions exist, sanity-check yfinance against them.
-                            if sym_actions:
-                                try:
-                                    manual_factor = build_manual_factor_series(
-                                        symbol=str(sym),
-                                        dates=ref_dates,
-                                        ref_close=ref_close,
-                                        ref_open=ref_open,
-                                        actions=sym_actions,
-                                    )
-                                except Exception as exc:
-                                    manual_factor = None
-                                    reason = f"nse_manual_failed:{exc}"
-
-                                if manual_factor is not None:
-                                    y_dev = max_abs_dev_from_one(y_vals)
-                                    m_dev = max_abs_dev_from_one(manual_factor)
-                                    mask = np.isfinite(y_vals)
-                                    maxdiff = (
-                                        float(np.max(np.abs(y_vals[mask].astype("float64") - manual_factor[mask].astype("float64"))))
-                                        if bool(mask.any())
-                                        else 0.0
-                                    )
-
-                                    # Treat yfinance as insufficient if it looks unadjusted while NSE implies adjustments,
-                                    # or if it disagrees materially with NSE-derived factors.
-                                    if (y_dev < 1e-6 and m_dev >= 1e-6) or (maxdiff > 0.05):
-                                        reason = (
-                                            f"yfinance_mismatch_vs_nse_maxdiff:{maxdiff:.4f}"
-                                            if maxdiff > 0.05
-                                            else "yfinance_trivial_but_nse_nontrivial"
-                                        )
-                                    else:
-                                        if np.isnan(y_vals).any():
-                                            miss = np.isnan(y_vals)
-                                            filled_from_manual = int(miss.sum())
-                                            y_vals[miss] = manual_factor[miss]
-                                        factor = y_vals
-                                        used = "yfinance"
-                                else:
-                                    # Couldn't compute NSE factors; accept yfinance.
-                                    if np.isnan(y_vals).any():
-                                        miss = np.isnan(y_vals)
-                                        y_vals[miss] = 1.0
-                                    factor = y_vals
-                                    used = "yfinance"
-                            else:
-                                # No NSE actions for this symbol; accept yfinance.
-                                if np.isnan(y_vals).any():
-                                    miss = np.isnan(y_vals)
-                                    y_vals[miss] = 1.0
-                                factor = y_vals
-                                used = "yfinance"
-                        else:
-                            reason = f"yfinance_coverage_below_90pct:{coverage:.3f}"
-                else:
-                    reason = "yfinance_missing_series"
-            else:
-                reason = "yfinance_disabled_rate_limited" if YF_RATE_LIMITED else "yfinance_skipped_or_batch_failed"
-
-            # Method 2: NSE corporate actions manual factors
-            if factor is None:
-                try:
-                    if manual_factor is None:
-                        manual_factor = build_manual_factor_series(
-                            symbol=str(sym),
-                            dates=ref_dates,
-                            ref_close=ref_close,
-                            actions=sym_actions,
-                        )
+            # --- Method 1: NSE corporate actions manual factors (Priority 1) ---
+            # We trust official exchange actions over third-party data providers.
+            try:
+                manual_factor = build_manual_factor_series(
+                    symbol=str(sym),
+                    dates=ref_dates,
+                    ref_close=ref_close,
+                    ref_open=ref_open,
+                    actions=sym_actions,
+                )
+                m_dev = max_abs_dev_from_one(manual_factor)
+                if m_dev >= 1e-6:
                     factor = manual_factor
-
-                    # If there are no meaningful price adjustments, this is effectively raw.
-                    if max_abs_dev_from_one(factor) < 1e-6:
-                        used = "raw_no_adjustment"
-                        if not reason:
-                            reason = "no_price_adjustments_detected"
-                    else:
-                        used = "nse_corporate_actions"
+                    used = "nse_corporate_actions"
                     coverage = 1.0
-                except Exception as exc:
-                    reason = f"nse_manual_failed:{exc}"
-                    factor = None
+                else:
+                    reason = "no_meaningful_nse_manual_adjustments"
+            except Exception as exc:
+                reason = f"nse_manual_failed:{exc}"
+                factor = None
+
+            # --- Method 2: yfinance (Priority 2 / Fallback) ---
+            # Use yf if manual failed or was trivial (e.g. no actions in NSE cache)
+            if factor is None:
+                ticker = f"{sym}.NS"
+                if not should_skip_yfinance(str(sym)) and yf_df is not None and not yf_df.empty:
+                    y_close = extract_yf_series(yf_df, ticker, "Close")
+                    y_adj = extract_yf_series(yf_df, ticker, "Adj Close")
+                    if y_close is not None and y_adj is not None:
+                        y_factor = (y_adj / y_close).replace([np.inf, -np.inf], np.nan).dropna()
+                        if not y_factor.empty:
+                            aligned = y_factor.reindex(
+                                ref_dates,
+                                method="ffill",
+                                tolerance=pd.Timedelta(days=ALIGN_TOLERANCE_DAYS),
+                            )
+                            coverage = float(aligned.notna().mean()) if len(aligned) else 0.0
+                            if coverage >= 0.90:
+                                factor = aligned.bfill().to_numpy(dtype="float32")
+                                used = "yfinance"
+                            else:
+                                reason = f"yfinance_coverage_below_90pct:{coverage:.3f}"
+                        else:
+                            reason = "yf_factor_empty"
+                    else:
+                        reason = "yf_series_missing"
+                else:
+                    reason = "yfinance_disabled_or_no_data"
 
             # Methods 3-5: demo endpoints (implemented as no-op fallbacks; skip if key-gated)
             # (We keep these for layered fallback compliance; they are rarely useful without keys.)
@@ -886,9 +875,11 @@ def main() -> None:
             pos = ref_dates.get_indexer(sym_rows["trade_date"].to_numpy())
             # pos should never be -1 because ref_dates built from sym_rows unique dates
             row_factor = factor[pos].astype("float32", copy=False)
-            adjusted_close[start_i:end_i] = (sym_rows["close"].to_numpy(dtype="float32") * row_factor).astype(
-                "float32"
-            )
+            
+            adjusted_open[start_i:end_i] = (sym_rows["open"].to_numpy(dtype="float32") * row_factor).astype("float32")
+            adjusted_high[start_i:end_i] = (sym_rows["high"].to_numpy(dtype="float32") * row_factor).astype("float32")
+            adjusted_low[start_i:end_i] = (sym_rows["low"].to_numpy(dtype="float32") * row_factor).astype("float32")
+            adjusted_close[start_i:end_i] = (sym_rows["close"].to_numpy(dtype="float32") * row_factor).astype("float32")
 
             sym_stats[str(sym)] = {
                 "method": used,
@@ -903,19 +894,30 @@ def main() -> None:
         time.sleep(random.uniform(1.0, 4.0))
 
     base_out = base[["symbol", "series", "trade_date", "year"]].copy()
-    base_out["adjusted_close"] = adjusted_close.astype("float32", copy=False)
+    base_out["adj_open"] = adjusted_open.astype("float32", copy=False)
+    base_out["adj_high"] = adjusted_high.astype("float32", copy=False)
+    base_out["adj_low"] = adjusted_low.astype("float32", copy=False)
+    base_out["adj_close"] = adjusted_close.astype("float32", copy=False)
 
-    # Sanity: no missing adjusted_close
-    missing = int(pd.isna(base_out["adjusted_close"]).sum())
+    # Sanity: no missing adjusted prices
+    missing = int(pd.isna(base_out["adj_close"]).sum())
     if missing:
-        logging.warning("adjusted_close has %d missing values. Filling with raw close.", missing)
-        base_out.loc[pd.isna(base_out["adjusted_close"]), "adjusted_close"] = base.loc[
-            pd.isna(base_out["adjusted_close"]), "close"
-        ].to_numpy(dtype="float32")
+        logging.warning("adjusted_close has %d missing values. Filling with raw OHLC.", missing)
+        for col, raw in [("adj_open", "open"), ("adj_high", "high"), ("adj_low", "low"), ("adj_close", "close")]:
+            base_out.loc[pd.isna(base_out[col]), col] = base.loc[pd.isna(base_out[col]), raw].to_numpy(dtype="float32")
+
+    # Release memory mapped file handles from PyArrow and sockets from yfinance
+    import gc
+    try:
+        del dataset
+        del base_ds
+    except Exception:
+        pass
+    gc.collect()
 
     # Write output dataset, year-partitioned, without touching original.
     logging.info("Writing NEW dataset to %s (partitioned by year)...", OUT_DIR)
-    OUT_DIR.mkdir(parents=True, exist_ok=False)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     years = sorted(base_out["year"].dropna().astype(int).unique().tolist())
     for y in years:
@@ -930,14 +932,21 @@ def main() -> None:
         # Filter by target_symbol if set (for single-symbol testing)
         if target_symbol:
             year_df = year_df[year_df["symbol"] == target_symbol]
+            
+        # Deduplicate the partition just in case (e.g. daily updater appended duplicate or unmapped NaN symbols)
+        year_df.drop_duplicates(["symbol", "series", "trade_date"], keep="last", inplace=True)
+            
         # Align categoricals to global categories so merge preserves category dtype
         year_df["symbol"] = year_df["symbol"].astype("category").cat.set_categories(sym_cats)
         year_df["series"] = year_df["series"].astype("category").cat.set_categories(series_cats)
         year_df["trade_date"] = pd.to_datetime(year_df["trade_date"]).dt.floor("D")
 
-        map_year = base_out[base_out["year"] == y][["symbol", "series", "trade_date", "adjusted_close"]].copy()
+        map_year = base_out[base_out["year"] == y][["symbol", "series", "trade_date", "adj_open", "adj_high", "adj_low", "adj_close"]].copy()
         map_year["symbol"] = map_year["symbol"].cat.set_categories(sym_cats)
         map_year["series"] = map_year["series"].cat.set_categories(series_cats)
+
+        # Deduplicate the right side again just in case there are multiple NaNs mapping to the same date
+        map_year.drop_duplicates(["symbol", "series", "trade_date"], keep="last", inplace=True)
 
         merged = year_df.merge(
             map_year,
@@ -945,13 +954,15 @@ def main() -> None:
             how="left",
             validate="one_to_one",
         )
-        if merged["adjusted_close"].isna().any():
-            # Shouldn't happen; fill with raw close just in case
-            n = int(merged["adjusted_close"].isna().sum())
-            logging.warning("  year=%s missing adjusted_close rows=%d; filling with raw close.", y, n)
-            merged["adjusted_close"] = merged["adjusted_close"].fillna(merged["close"]).astype("float32")
+        if merged["adj_close"].isna().any():
+            # Shouldn't happen; fill with raw OHLC just in case
+            n = int(merged["adj_close"].isna().sum())
+            logging.warning("  year=%s missing adjusted prices rows=%d; filling with raw.", y, n)
+            for c_adj, c_raw in [("adj_open", "open"), ("adj_high", "high"), ("adj_low", "low"), ("adj_close", "close")]:
+                merged[c_adj] = merged[c_adj].fillna(merged[c_raw]).astype("float32")
         else:
-            merged["adjusted_close"] = pd.to_numeric(merged["adjusted_close"], errors="coerce").astype("float32")
+            for col in ["adj_open", "adj_high", "adj_low", "adj_close"]:
+                merged[col] = pd.to_numeric(merged[col], errors="coerce").astype("float32")
 
         out_year_dir = OUT_DIR / f"year={y}"
         out_year_dir.mkdir(parents=True, exist_ok=False)
@@ -985,8 +996,8 @@ def main() -> None:
         denom = int(counts.sum())
         per_year_method[int(y)] = {str(v): round(int(c) / denom * 100.0, 4) for v, c in zip(vals, counts)}
 
-    # Overall value-change metric (adjusted_close != close)
-    ratio_all = (base_out["adjusted_close"].to_numpy(dtype="float32") / base["close"].to_numpy(dtype="float32")).astype(
+    # Overall value-change metric (adj_close != close)
+    ratio_all = (base_out["adj_close"].to_numpy(dtype="float32") / base["close"].to_numpy(dtype="float32")).astype(
         "float64", copy=False
     )
     ratio_all = ratio_all[np.isfinite(ratio_all)]
@@ -995,13 +1006,13 @@ def main() -> None:
     # Recent match check (last ~2 years)
     recent_start = pd.Timestamp(max_trade_date_dt - dt.timedelta(days=730))
     recent_mask = base["trade_date"] >= recent_start
-    recent_ratio = (base_out.loc[recent_mask, "adjusted_close"].to_numpy() / base.loc[recent_mask, "close"].to_numpy())
+    recent_ratio = (base_out.loc[recent_mask, "adj_close"].to_numpy() / base.loc[recent_mask, "close"].to_numpy())
     recent_ratio = recent_ratio[np.isfinite(recent_ratio)]
     recent_abs_dev = float(np.nanmean(np.abs(recent_ratio - 1.0))) if recent_ratio.size else float("nan")
 
     # Statistical sanity per year (mean/median abs deviation)
     abs_dev = np.abs(
-        base_out["adjusted_close"].to_numpy(dtype="float32") / base["close"].to_numpy(dtype="float32") - 1.0
+        base_out["adj_close"].to_numpy(dtype="float32") / base["close"].to_numpy(dtype="float32") - 1.0
     )
     abs_dev = np.where(np.isfinite(abs_dev), abs_dev, np.nan)
     dev_df = pd.DataFrame({"year": base["year"].to_numpy(dtype="int32"), "abs_dev": abs_dev})
@@ -1015,7 +1026,7 @@ def main() -> None:
 
     # Outliers in recent period (>10% deviation)
     recent_abs_dev_arr = np.abs(
-        base_out.loc[recent_mask, "adjusted_close"].to_numpy(dtype="float32")
+        base_out.loc[recent_mask, "adj_close"].to_numpy(dtype="float32")
         / base.loc[recent_mask, "close"].to_numpy(dtype="float32")
         - 1.0
     )
@@ -1033,7 +1044,7 @@ def main() -> None:
                 "trade_date": base.loc[s0:s1 - 1, "trade_date"].to_numpy(),
                 "series": base.loc[s0:s1 - 1, "series"].astype(str).to_numpy(),
                 "close": base.loc[s0:s1 - 1, "close"].to_numpy(dtype="float32"),
-                "adj": base_out.loc[s0:s1 - 1, "adjusted_close"].to_numpy(dtype="float32"),
+                "adj": base_out.loc[s0:s1 - 1, "adj_close"].to_numpy(dtype="float32"),
             }
         )
         # Prefer EQ where possible
@@ -1194,7 +1205,7 @@ def main() -> None:
                 "trade_date": base.loc[s0:s1 - 1, "trade_date"].to_numpy(),
                 "series": base.loc[s0:s1 - 1, "series"].astype(str).to_numpy(),
                 "close": base.loc[s0:s1 - 1, "close"].to_numpy(dtype="float32"),
-                "adj": base_out.loc[s0:s1 - 1, "adjusted_close"].to_numpy(dtype="float32"),
+                "adj": base_out.loc[s0:s1 - 1, "adj_close"].to_numpy(dtype="float32"),
             }
         )
         tmp["_prio"] = (tmp["series"] != "EQ").astype(int)
@@ -1257,7 +1268,19 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Build Adjusted NSE Master Parquet")
+    parser.add_argument("--orig-dir", type=str, help="Path to input Parquet dataset")
+    parser.add_argument("--out-dir", type=str, help="Path to output Parquet dataset")
+    parser.add_argument("--report-path", type=str, help="Path to JSON report file")
+    parser.add_argument("--symbol", type=str, help="Filter for single symbol (debugging)")
+    args = parser.parse_args()
+
+    if args.orig_dir: ORIG_DIR = Path(args.orig_dir)
+    if args.out_dir: OUT_DIR = Path(args.out_dir)
+    if args.report_path: REPORT_PATH = Path(args.report_path)
+
     # Avoid inheriting pandas thread settings that can explode CPU.
     os.environ.setdefault("OMP_NUM_THREADS", "1")
     os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
-    main()
+    main(target_symbol=args.symbol)
