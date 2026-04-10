@@ -23,11 +23,11 @@ def check_reliance():
     mask = (df["trade_date"] >= "2023-07-15") & (df["trade_date"] <= "2023-07-28")
     df = df[mask].sort_values("trade_date")
     
-    # Calculate effective factor: adjusted_close / close
-    df["eff_factor"] = df["adjusted_close"] / df["close"]
+    # Calculate effective factor: adj_close / close
+    df["eff_factor"] = df["adj_close"] / df["close"]
     
     print("\nReliance Data (July 2023):")
-    cols = ["symbol", "series", "trade_date", "open", "close", "adjusted_close", "eff_factor"]
+    cols = ["symbol", "series", "trade_date", "open", "close", "adj_close", "eff_factor"]
     cols = [c for c in cols if c in df.columns]
     
     print(df[cols].to_string(index=False))

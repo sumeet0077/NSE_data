@@ -140,7 +140,7 @@ def compare_prices(our_df, symbol, year):
         result["sample_discrepancies"] = [
             {
                 "date": str(r["Date"].date()),
-                "our_adj_close": round(float(r["adjusted_close"]), 2),
+                "our_adj_close": round(float(r["adj_close"]), 2),
                 "yf_adj_close": round(float(r["Adj Close"]), 2),
                 "pct_diff": round(float(r["pct_diff"]), 2)
             } for r in sample_disc

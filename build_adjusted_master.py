@@ -285,6 +285,38 @@ def parse_subject(subject: str, face_val: float) -> list[ParsedEvent]:
     return out
 
 
+def is_significant_ca(actions: list[dict[str, Any]], reference_date: dt.date, window_days: int = 15) -> bool:
+    """
+    Check if any split, bonus, or rights issue happened within the window relative to reference_date.
+    """
+    cutoff = reference_date - dt.timedelta(days=window_days)
+    for rec in actions:
+        subj = str(rec.get("subject", "") or "").lower()
+        if any(k in subj for k in ("split", "bonus", "rights", "reorg")):
+            try:
+                ex_d = parse_nse_date(str(rec.get("exDate", "")).strip())
+                if ex_d >= cutoff:
+                    return True
+            except Exception:
+                continue
+    return False
+
+
+def has_recent_ca(actions: list[dict[str, Any]], reference_date: dt.date, window_days: int = 30) -> bool:
+    """
+    Check if ANY corporate action (including dividends) happened within the window relative to reference_date.
+    """
+    cutoff = reference_date - dt.timedelta(days=window_days)
+    for rec in actions:
+        try:
+            ex_d = parse_nse_date(str(rec.get("exDate", "")).strip())
+            if ex_d >= cutoff:
+                return True
+        except Exception:
+            continue
+    return False
+
+
 def align_effective_date(ex_date: dt.date, dates: pd.DatetimeIndex) -> pd.Timestamp | None:
     """
     Align an ex-date to the nearest available trading date >= ex_date within tolerance.
@@ -607,11 +639,13 @@ def main(target_symbol: str | None = None) -> None:
             ("year", pa.int32()),
         ]
     )
-    base_ds = ds.dataset(ORIG_DIR, format="parquet", partitioning="hive", schema=base_schema)
+    partitioning = ds.partitioning(pa.schema([("year", pa.int32())]), flavor="hive")
+    base_ds = ds.dataset(ORIG_DIR, format="parquet", partitioning=partitioning, schema=base_schema)
     base = base_ds.to_table(columns=["symbol", "series", "trade_date", "open", "high", "low", "close", "year"]).to_pandas()
     base["trade_date"] = pd.to_datetime(base["trade_date"]).dt.floor("D")
     for col in ["open", "high", "low", "close"]:
         base[col] = pd.to_numeric(base[col], errors="coerce").astype("float32")
+    base["year"] = pd.to_numeric(base["year"], errors="coerce").fillna(0).astype("int32")
     base["open"] = pd.to_numeric(base["open"], errors="coerce").astype("float32")
 
     # Validate key uniqueness per partition-year (dataset can include previous-year dates in next-year partition)
@@ -747,7 +781,34 @@ def main(target_symbol: str | None = None) -> None:
 
     sym_stats: dict[str, dict[str, Any]] = {}
 
+    # --- INCREMENTAL MODE PREP ---
+    # Load existing factors from the LIVE final output (not staging OUT_DIR which won't exist yet)
+    LIVE_ADJUSTED_DIR = Path(__file__).resolve().parent / "nse_master_adjusted_2014_onwards.parquet"
+    old_factors: dict[str, pd.Series] = {}
+    incremental_source = LIVE_ADJUSTED_DIR if LIVE_ADJUSTED_DIR.exists() else (OUT_DIR if OUT_DIR.exists() else None)
+    if incremental_source:
+        logging.info("Incremental Mode: Loading existing factors from %s", incremental_source)
+        try:
+            old_ds = ds.dataset(incremental_source, format="parquet", partitioning="hive")
+            old_table = old_ds.to_table(columns=["symbol", "trade_date", "close", "adj_close"]).to_pandas()
+            old_table["trade_date"] = pd.to_datetime(old_table["trade_date"]).dt.floor("D")
+            old_table["factor"] = (old_table["adj_close"] / old_table["close"]).astype("float32")
+            
+            # Ensure no duplicates per date/symbol (EQ vs BE series etc)
+            old_table = old_table.sort_values(["symbol", "trade_date", "factor"]).drop_duplicates(["symbol", "trade_date"], keep="last")
+            
+            for sym, grp in old_table.groupby("symbol"):
+                old_factors[str(sym)] = grp.set_index("trade_date")["factor"]
+            
+            logging.info("Loaded previous factors for %d symbols", len(old_factors))
+            del old_table
+        except Exception as exc:
+            logging.warning("Could not load previous factors for incremental update: %s", exc)
+    else:
+        logging.info("No existing adjusted dataset found — running full build (first time)")
+
     end_dt = (dt.date.today() + dt.timedelta(days=2)).isoformat()
+    incremental_cutoff = max_trade_date_dt - dt.timedelta(days=30)
 
     def symbol_slice(sym_idx: int) -> tuple[int, int]:
         return int(starts[sym_idx]), int(ends[sym_idx])
@@ -762,15 +823,64 @@ def main(target_symbol: str | None = None) -> None:
 
         logging.info("Processing batch %d/%d (symbols %d..%d)", b + 1, total_batches, lo + 1, hi)
 
-        yf_df: pd.DataFrame | None = None
-        if batch_tickers and not YF_RATE_LIMITED:
-            yf_df = yf_download_batch(batch_tickers, start=YF_START, end=end_dt)
+        # Separate symbols into 'Deep Dive', 'Incremental', and 'Stable' (bypass yfinance)
+        deep_dive_tickers = []
+        incremental_tickers = []
+        stable_tickers = []
+        
+        for sym in batch_syms:
+            if should_skip_yfinance(str(sym)):
+                continue
+            
+            sym_actions = ca_by_symbol.get(str(sym), [])
+            is_new = str(sym) not in old_factors
+            
+            # If significant CA in last 15 days OR we have no history for this symbol, do full rebuild
+            if is_significant_ca(sym_actions, max_trade_date_dt) or is_new:
+                deep_dive_tickers.append(f"{sym}.NS")
+            elif has_recent_ca(sym_actions, max_trade_date_dt, window_days=30):
+                # Any recent action (e.g. dividend) -> download last 20 days to be sure
+                incremental_tickers.append(f"{sym}.NS")
+            else:
+                # No actions in 30 days -> use old factors directly (Bypass yfinance)
+                stable_tickers.append(f"{sym}.NS")
+
+        yf_df_deep: pd.DataFrame | None = None
+        yf_df_inc: pd.DataFrame | None = None
+        
+        if not YF_RATE_LIMITED:
+            if deep_dive_tickers:
+                logging.info("  Fetching FULL history for %d symbols (deep dive)...", len(deep_dive_tickers))
+                yf_df_deep = yf_download_batch(deep_dive_tickers, start=YF_START, end=end_dt)
+            
+            if incremental_tickers:
+                inc_start = (max_trade_date_dt - dt.timedelta(days=20)).isoformat()
+                logging.info("  Fetching RECENT history for %d symbols (incremental)...", len(incremental_tickers))
+                yf_df_inc = yf_download_batch(incremental_tickers, start=inc_start, end=end_dt)
+            
+            if stable_tickers:
+                logging.info("  Skipping yfinance for %d stable symbols", len(stable_tickers))
 
         # For each symbol in batch, decide factor source.
         for j, sym in enumerate(batch_syms):
             global_sym_idx = lo + j
             start_i, end_i = symbol_slice(global_sym_idx)
             sym_rows = base.iloc[start_i:end_i]
+            
+            ticker = f"{sym}.NS"
+            # Choose correct yf_df source
+            yf_df = None
+            is_deep = False
+            is_stable = False
+            
+            if ticker in deep_dive_tickers:
+                yf_df = yf_df_deep
+                is_deep = True
+            elif ticker in incremental_tickers:
+                yf_df = yf_df_inc
+                is_deep = False
+            else:
+                is_stable = True
 
             # Build reference close per unique date (prefer EQ if present)
             if not sym_rows["trade_date"].duplicated().any():
@@ -819,12 +929,38 @@ def main(target_symbol: str | None = None) -> None:
             # --- Method 2: yfinance (Priority 2 / Fallback) ---
             # Use yf if manual failed or was trivial (e.g. no actions in NSE cache)
             if factor is None:
-                ticker = f"{sym}.NS"
-                if not should_skip_yfinance(str(sym)) and yf_df is not None and not yf_df.empty:
+                if is_stable:
+                    # REUSE logic for stable symbols
+                    old_f_series = old_factors.get(str(sym))
+                    if old_f_series is not None:
+                        # Carry over last factor to all dates
+                        factor = old_f_series.reindex(
+                            ref_dates,
+                            method="ffill",
+                            tolerance=pd.Timedelta(days=ALIGN_TOLERANCE_DAYS),
+                        ).bfill().to_numpy(dtype="float32")
+                        used = "factors_reuse_stable"
+                        coverage = 1.0
+                    else:
+                        reason = "stable_but_missing_old_factors"
+                elif not should_skip_yfinance(str(sym)) and yf_df is not None and not yf_df.empty:
                     y_close = extract_yf_series(yf_df, ticker, "Close")
                     y_adj = extract_yf_series(yf_df, ticker, "Adj Close")
                     if y_close is not None and y_adj is not None:
-                        y_factor = (y_adj / y_close).replace([np.inf, -np.inf], np.nan).dropna()
+                        y_factor_new = (y_adj / y_close).replace([np.inf, -np.inf], np.nan).dropna()
+                        
+                        if is_deep:
+                            y_factor = y_factor_new
+                        else:
+                            # STITCHING LOGIC: combine results from old_factors and recent yf_factor_new
+                            old_f_series = old_factors.get(str(sym))
+                            if old_f_series is not None:
+                                # Prioritize new data for overlapping dates
+                                y_factor = pd.concat([old_f_series, y_factor_new])
+                                y_factor = y_factor[~y_factor.index.duplicated(keep='last')].sort_index()
+                            else:
+                                y_factor = y_factor_new
+
                         if not y_factor.empty:
                             aligned = y_factor.reindex(
                                 ref_dates,
@@ -834,7 +970,7 @@ def main(target_symbol: str | None = None) -> None:
                             coverage = float(aligned.notna().mean()) if len(aligned) else 0.0
                             if coverage >= 0.90:
                                 factor = aligned.bfill().to_numpy(dtype="float32")
-                                used = "yfinance"
+                                used = "yfinance" if is_deep else "yfinance_incremental"
                             else:
                                 reason = f"yfinance_coverage_below_90pct:{coverage:.3f}"
                         else:
@@ -967,7 +1103,10 @@ def main(target_symbol: str | None = None) -> None:
         out_year_dir = OUT_DIR / f"year={y}"
         out_year_dir.mkdir(parents=True, exist_ok=False)
         out_file = out_year_dir / f"part-{y}.parquet"
-        merged.to_parquet(out_file, engine="pyarrow", compression="zstd", compression_level=8, index=False)
+        # Drop 'year' column before writing so it doesn't conflict with partition metadata
+        merged.drop(columns=["year"], errors="ignore").to_parquet(
+            out_file, engine="pyarrow", compression="zstd", compression_level=8, index=False
+        )
 
     # ----------------------------
     # Validation + report

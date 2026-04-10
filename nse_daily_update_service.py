@@ -74,31 +74,72 @@ class FetchCandidate:
 def run_post_process() -> bool:
     """
     Runs the adjusted master builder script after a successful daily update.
-    Returns True if successful, False otherwise.
+    Uses an atomic 'build-then-swap' approach for foolproof deployments.
     """
     logging.info("Starting post-process: Building Adjusted Master Dataset...")
     builder_script = WORKDIR / "build_adjusted_master.py"
+    final_output = WORKDIR / "nse_master_adjusted_2014_onwards.parquet"
+    staging_output = WORKDIR / "nse_master_adjusted_staging.parquet"
+    staging_report = WORKDIR / "adjusted_close_report_staging.json"
+    
+    # Ensure staging is clean
+    import shutil
+    import os
+    if staging_output.exists():
+        shutil.rmtree(staging_output)
     
     try:
-        # Run the builder script using the same python interpreter
+        # Run the builder script, directing output to the staging folder
+        # This keeps the 'final_output' live and functional for the user until the very last second.
+        logging.info("Building into STAGING folder: %s", staging_output)
         result = subprocess.run(
-            [sys.executable, str(builder_script)],
+            [
+                sys.executable, 
+                str(builder_script), 
+                "--out-dir", str(staging_output), 
+                "--report-path", str(staging_report)
+            ],
             capture_output=True,
             text=True,
             check=True
         )
-        logging.info("Adjusted Master Build SUCCESS.")
-        # Optional: Log the last few lines of output
-        if result.stdout:
-            logging.info("Builder Output (tail): %s", result.stdout[-500:])
+        
+        # ATOMIC SWAP: Only executed if the builder returned Exit Code 0
+        logging.info("Build Successful. Performing atomic swap...")
+        if final_output.exists():
+            shutil.rmtree(final_output)
+        
+        # os.replace is atomic for files, but for directories we use rename/move
+        shutil.move(str(staging_output), str(final_output))
+        
+        # Move the report too
+        final_report = WORKDIR / "adjusted_close_report.json"
+        if staging_report.exists():
+            if final_report.exists(): final_report.unlink()
+            shutil.move(str(staging_report), str(final_report))
+
+        logging.info("Adjusted Master Deployment SUCCESS. Final data is now LIVE.")
+        
+        # Trigger autonomous frontend pipeline (CSVs + JSONs + Git Push)
+        try:
+            logging.info("Triggering autonomous frontend data build map...")
+            subprocess.run(["/bin/bash", str(WORKDIR / "trigger_frontend_build.sh")], check=True)
+            logging.info("Frontend build and GitHub push completely successful.")
+        except Exception as e:
+            logging.error("Frontend build trigger failed natively: %s", e)
+            
         return True
+
     except subprocess.CalledProcessError as e:
-        logging.error("Adjusted Master Build FAILED (Exit Code %d)", e.returncode)
-        logging.error("Stdout: %s", e.stdout[-1000:] if e.stdout else "None")
+        logging.error("Adjusted Master Build FAILED (Exit Code %d). Staging data discarded.", e.returncode)
         logging.error("Stderr: %s", e.stderr[-1000:] if e.stderr else "None")
+        if staging_output.exists():
+            shutil.rmtree(staging_output)
         return False
     except Exception as e:
         logging.error("Adjusted Master Build Exception: %s", e)
+        if staging_output.exists():
+            shutil.rmtree(staging_output)
         return False
 
 
@@ -457,20 +498,24 @@ def merge_into_master(df: pd.DataFrame, trade_date: dt.date) -> tuple[int, int]:
 
     for c in ("volume", "trades", "deliv_qty"):
         vals = pd.to_numeric(merged[c], errors="coerce")
-        max_val = vals.max(skipna=True)
-        if pd.notna(max_val) and max_val > 4294967295:
-            merged[c] = vals.round().astype("UInt64")
-        else:
-            merged[c] = vals.round().astype("UInt32")
+        merged[c] = vals.round().astype("UInt64")
 
     tmp_file = year_file.with_suffix(".tmp.parquet")
-    merged.to_parquet(tmp_file, engine="pyarrow", compression="zstd", compression_level=8, index=False)
+    # Drop 'year' column before writing so it doesn't conflict with partition metadata
+    merged.drop(columns=["year"], errors="ignore").to_parquet(
+        tmp_file, engine="pyarrow", compression="zstd", compression_level=8, index=False
+    )
     tmp_file.replace(year_file)
     return before_rows, len(merged)
 
 
 def update_metadata() -> dict[str, object]:
-    df = pd.read_parquet(MASTER_DIR, columns=["trade_date", "symbol", "deliv_pct", "year"])
+    import pyarrow as pa
+    import pyarrow.dataset as pds
+    partitioning = pds.partitioning(pa.schema([("year", pa.int32())]), flavor="hive")
+    dataset = pds.dataset(MASTER_DIR, format="parquet", partitioning=partitioning)
+    table = dataset.to_table(columns=["trade_date", "symbol", "deliv_pct", "year"])
+    df = table.to_pandas()
     df["trade_date"] = pd.to_datetime(df["trade_date"], errors="coerce")
     df = df[df["trade_date"].notna()]
 
@@ -499,6 +544,7 @@ def update_metadata() -> dict[str, object]:
     }
     METADATA_PATH.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     return metadata
+
 
 
 def update_for_date(
@@ -564,8 +610,7 @@ def should_attempt_slot(state: dict[str, object], trade_date: dt.date, hour: int
     date_key = trade_date.isoformat()
     if state.get("date") != date_key:
         return True
-    if state.get("success") is True:
-        return False
+    # ALLOW re-checking later slots even if already successful (to catch late corporate actions)
     attempted = set(state.get("attempted_hours", []))
     return hour not in attempted
 
@@ -618,7 +663,14 @@ def run_missed_slots_catchup(
             continue
 
         logging.info("Catch-up attempt for missed/past slot=%02d:00 date=%s", slot_hour, today)
-        success, msg = update_for_date(session, today, require_delivery=require_delivery)
+        
+        # Strategy: Relax delivery requirement for early slots (before 18:00 IST)
+        # to get price data live ASAP. Later slots will automatically fill it in.
+        effective_require_delivery = require_delivery if slot_hour >= 18 else False
+        if not effective_require_delivery and require_delivery:
+            logging.info("Relaxing delivery requirement for early catch-up slot %02d:00", slot_hour)
+
+        success, msg = update_for_date(session, today, require_delivery=effective_require_delivery)
         state = record_slot_attempt(state, today, slot_hour, success, msg)
         if success:
             logging.info("Catch-up SUCCESS date=%s slot=%02d:00 %s", today, slot_hour, msg)
@@ -734,7 +786,13 @@ def run_service(require_delivery: bool, slots: list[int], timezone: str) -> None
             continue
 
         logging.info("Running update attempt for trade_date=%s at slot=%02d:00", trade_date, hour)
-        success, msg = update_for_date(session, trade_date, require_delivery=require_delivery)
+        
+        # Strategy: Relax delivery requirement for early slots (before 18:00 IST)
+        effective_require_delivery = require_delivery if hour >= 18 else False
+        if not effective_require_delivery and require_delivery:
+            logging.info("Relaxing delivery requirement for early slot %02d:00", hour)
+
+        success, msg = update_for_date(session, trade_date, require_delivery=effective_require_delivery)
         state = record_slot_attempt(state, trade_date, hour, success, msg)
         if success:
             logging.info("SUCCESS date=%s slot=%02d:00 %s", trade_date, hour, msg)
@@ -767,7 +825,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-once", action="store_true", help="Run one immediate update")
     parser.add_argument("--date", type=str, default="", help="Trade date YYYY-MM-DD (for --run-once)")
     parser.add_argument("--timezone", type=str, default="Asia/Kolkata", help="Scheduler timezone")
-    parser.add_argument("--slots", type=str, default="18,19,20", help="Comma-separated retry slot hours")
+    parser.add_argument("--slots", type=str, default="16,17,18,19,20", help="Comma-separated retry slot hours")
     parser.add_argument(
         "--allow-missing-delivery",
         action="store_true",
