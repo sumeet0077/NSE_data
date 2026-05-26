@@ -843,7 +843,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-once", action="store_true", help="Run one immediate update")
     parser.add_argument("--date", type=str, default="", help="Trade date YYYY-MM-DD (for --run-once)")
     parser.add_argument("--timezone", type=str, default="Asia/Kolkata", help="Scheduler timezone")
-    parser.add_argument("--slots", type=str, default="16,17,18,19,20", help="Comma-separated retry slot hours")
+    parser.add_argument("--slots", type=str, default="16:30,17,18,19,20", help="Comma-separated retry slot times")
     parser.add_argument(
         "--allow-missing-delivery",
         action="store_true",
