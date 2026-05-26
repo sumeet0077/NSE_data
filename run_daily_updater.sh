@@ -11,6 +11,6 @@ echo "Starting NSE Daily Updater Service (Relocated) at $(date)" >> daily_update
 exec "/Users/sumeetdas/Antigravity_NSE_Data/.venv/bin/python" "nse_daily_update_service.py" \
     --service \
     --timezone "Asia/Kolkata" \
-    --slots "16,17,18,19,20" \
+    --slots "16:30,17,18,19,20" \
     "$@" \
     >> daily_updater_stdout.log 2>> daily_updater_stderr.log

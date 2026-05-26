@@ -1,157 +1,153 @@
 {
   "original_dataset_dir": "/Users/sumeetdas/Antigravity_NSE_Data/nse_master_bhav_with_delivery_2014_onwards.parquet",
   "output_dataset_dir": "/Users/sumeetdas/Antigravity_NSE_Data/nse_master_adjusted_staging.parquet",
-  "rows": 6312776,
-  "unique_symbols": 5268,
+  "rows": 6411808,
+  "unique_symbols": 5631,
   "min_trade_date": "2014-01-01",
-  "max_trade_date": "2026-04-10",
+  "max_trade_date": "2026-05-26",
   "symbol_method_counts": {
-    "factors_reuse_stable": 3406,
-    "nse_corporate_actions": 1861,
-    "yfinance_incremental": 1
+    "factors_reuse_stable": 3761,
+    "nse_corporate_actions": 1867,
+    "raw_no_adjustment": 3
   },
   "row_coverage_percent_by_method": {
-    "factors_reuse_stable": 36.5248,
-    "nse_corporate_actions": 63.4272,
-    "yfinance_incremental": 0.048
+    "factors_reuse_stable": 36.719,
+    "nse_corporate_actions": 63.2535,
+    "raw_no_adjustment": 0.0275
   },
   "per_year_row_coverage_percent_by_method": {
     "2014": {
-      "factors_reuse_stable": 38.8822,
-      "nse_corporate_actions": 61.0547,
-      "yfinance_incremental": 0.0631
+      "factors_reuse_stable": 38.9453,
+      "nse_corporate_actions": 61.0547
     },
     "2015": {
-      "factors_reuse_stable": 36.8291,
-      "nse_corporate_actions": 63.1076,
-      "yfinance_incremental": 0.0633
+      "factors_reuse_stable": 36.8924,
+      "nse_corporate_actions": 63.1076
     },
     "2016": {
-      "factors_reuse_stable": 35.7816,
-      "nse_corporate_actions": 64.158,
-      "yfinance_incremental": 0.0604
+      "factors_reuse_stable": 35.842,
+      "nse_corporate_actions": 64.158
     },
     "2017": {
-      "factors_reuse_stable": 33.7722,
-      "nse_corporate_actions": 66.1711,
-      "yfinance_incremental": 0.0567
+      "factors_reuse_stable": 33.8289,
+      "nse_corporate_actions": 66.1711
     },
     "2018": {
-      "factors_reuse_stable": 33.4026,
+      "factors_reuse_stable": 33.4255,
       "nse_corporate_actions": 66.5443,
-      "yfinance_incremental": 0.0531
+      "raw_no_adjustment": 0.0302
     },
     "2019": {
-      "factors_reuse_stable": 33.1108,
-      "nse_corporate_actions": 66.8373,
-      "yfinance_incremental": 0.0519
+      "factors_reuse_stable": 33.1153,
+      "nse_corporate_actions": 66.84,
+      "raw_no_adjustment": 0.0447
     },
     "2020": {
-      "factors_reuse_stable": 33.0741,
-      "nse_corporate_actions": 66.8749,
-      "yfinance_incremental": 0.051
+      "factors_reuse_stable": 33.0711,
+      "nse_corporate_actions": 66.8832,
+      "raw_no_adjustment": 0.0457
     },
     "2021": {
-      "factors_reuse_stable": 32.5136,
-      "nse_corporate_actions": 67.438,
-      "yfinance_incremental": 0.0484
+      "factors_reuse_stable": 32.5013,
+      "nse_corporate_actions": 67.456,
+      "raw_no_adjustment": 0.0428
     },
     "2022": {
-      "factors_reuse_stable": 33.3672,
-      "nse_corporate_actions": 66.588,
-      "yfinance_incremental": 0.0448
+      "factors_reuse_stable": 33.3371,
+      "nse_corporate_actions": 66.6249,
+      "raw_no_adjustment": 0.038
     },
     "2023": {
-      "factors_reuse_stable": 35.3542,
-      "nse_corporate_actions": 64.6044,
-      "yfinance_incremental": 0.0413
+      "factors_reuse_stable": 35.3188,
+      "nse_corporate_actions": 64.6458,
+      "raw_no_adjustment": 0.0355
     },
     "2024": {
-      "factors_reuse_stable": 39.9612,
-      "nse_corporate_actions": 60.0011,
-      "yfinance_incremental": 0.0377
+      "factors_reuse_stable": 39.9267,
+      "nse_corporate_actions": 60.0388,
+      "raw_no_adjustment": 0.0345
     },
     "2025": {
-      "factors_reuse_stable": 43.7333,
-      "nse_corporate_actions": 56.2324,
-      "yfinance_incremental": 0.0343
+      "factors_reuse_stable": 43.6452,
+      "nse_corporate_actions": 56.3222,
+      "raw_no_adjustment": 0.0327
     },
     "2026": {
-      "factors_reuse_stable": 47.219,
-      "nse_corporate_actions": 52.7515,
-      "yfinance_incremental": 0.0295
+      "factors_reuse_stable": 47.8894,
+      "nse_corporate_actions": 52.084,
+      "raw_no_adjustment": 0.0265
     }
   },
-  "value_changed_rows_percent": 52.9129,
+  "value_changed_rows_percent": 52.3067,
   "per_year_abs_dev_stats": {
     "2014": {
-      "mean_abs_dev": 0.19442099332809448,
-      "median_abs_dev": 0.03253699839115143,
+      "mean_abs_dev": 0.19457200169563293,
+      "median_abs_dev": 0.032561998814344406,
       "rows": 386388
     },
     "2015": {
-      "mean_abs_dev": 0.18371200561523438,
-      "median_abs_dev": 0.03246799856424332,
+      "mean_abs_dev": 0.18399299681186676,
+      "median_abs_dev": 0.0329740010201931,
       "rows": 391769
     },
     "2016": {
-      "mean_abs_dev": 0.17134100198745728,
-      "median_abs_dev": 0.02747800014913082,
+      "mean_abs_dev": 0.17165300250053406,
+      "median_abs_dev": 0.027652999386191368,
       "rows": 409163
     },
     "2017": {
-      "mean_abs_dev": 0.16364899277687073,
-      "median_abs_dev": 0.02739500068128109,
+      "mean_abs_dev": 0.16414299607276917,
+      "median_abs_dev": 0.027652999386191368,
       "rows": 437241
     },
     "2018": {
-      "mean_abs_dev": 0.1533229947090149,
-      "median_abs_dev": 0.023072000592947006,
+      "mean_abs_dev": 0.1538809984922409,
+      "median_abs_dev": 0.023364000022411346,
       "rows": 463036
     },
     "2019": {
-      "mean_abs_dev": 0.14179100096225739,
-      "median_abs_dev": 0.01763400062918663,
+      "mean_abs_dev": 0.14229300618171692,
+      "median_abs_dev": 0.017867999151349068,
       "rows": 470085
     },
     "2020": {
-      "mean_abs_dev": 0.13428999483585358,
-      "median_abs_dev": 0.01396500039845705,
+      "mean_abs_dev": 0.13481099903583527,
+      "median_abs_dev": 0.01400499977171421,
       "rows": 494081
     },
     "2021": {
-      "mean_abs_dev": 0.12880100309848785,
-      "median_abs_dev": 0.011651000007987022,
+      "mean_abs_dev": 0.12954799830913544,
+      "median_abs_dev": 0.01176500041037798,
       "rows": 512266
     },
     "2022": {
-      "mean_abs_dev": 0.11239299923181534,
-      "median_abs_dev": 0.008022000081837177,
+      "mean_abs_dev": 0.11337000131607056,
+      "median_abs_dev": 0.008066000416874886,
       "rows": 555537
     },
     "2023": {
-      "mean_abs_dev": 0.09023100137710571,
-      "median_abs_dev": 0.004120000172406435,
+      "mean_abs_dev": 0.09113100171089172,
+      "median_abs_dev": 0.004149000160396099,
       "rows": 597750
     },
     "2024": {
-      "mean_abs_dev": 0.05582699924707413,
+      "mean_abs_dev": 0.05685599893331528,
       "median_abs_dev": 0.0,
       "rows": 660303
     },
     "2025": {
-      "mean_abs_dev": 0.021164000034332275,
+      "mean_abs_dev": 0.02235499955713749,
       "median_abs_dev": 0.0,
       "rows": 725290
     },
     "2026": {
-      "mean_abs_dev": 0.0031560000497847795,
+      "mean_abs_dev": 0.003220000071451068,
       "median_abs_dev": 0.0,
-      "rows": 209867
+      "rows": 308899
     }
   },
-  "recent_2y_outlier_rows_pct_gt_10pct": 4.186159,
-  "recent_2y_mean_abs_adjustment_deviation": 0.028442,
+  "recent_2y_outlier_rows_pct_gt_10pct": 3.729251,
+  "recent_2y_mean_abs_adjustment_deviation": 0.025676,
   "known_action_tests": [
     {
       "symbol": "RELIANCE",
@@ -246,29 +242,37 @@
   ],
   "sma_discontinuity_checks": [
     {
-      "symbol": "GODREJIND",
-      "exDate": "2015-01-05",
-      "subject": "Bonus 1 : 1250",
-      "raw_sma_jump": 1.00013,
-      "adj_sma_jump": 1.000158,
+      "symbol": "HINDWAREAP",
+      "exDate": "2024-10-25",
+      "subject": "Rights 119:758 @ Premium Rs 218/-",
+      "raw_sma_jump": 0.99734,
+      "adj_sma_jump": 0.997519,
+      "adjusted_smoother": true
+    },
+    {
+      "symbol": "LIKHITHA",
+      "exDate": "2022-12-02",
+      "subject": "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 5/- Per Share",
+      "raw_sma_jump": 0.998876,
+      "adj_sma_jump": 1.003037,
       "adjusted_smoother": false
     },
     {
-      "symbol": "SIS",
-      "exDate": "2020-01-15",
-      "subject": " Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 5/- Per Share",
-      "raw_sma_jump": 0.997923,
-      "adj_sma_jump": 1.000828,
-      "adjusted_smoother": true
+      "symbol": "VSSL",
+      "exDate": "2017-04-07",
+      "subject": " Rights 2:3 @ Premium Rs 40/-",
+      "raw_sma_jump": 1.001478,
+      "adj_sma_jump": 1.003567,
+      "adjusted_smoother": false
     },
     {
-      "symbol": "ZYDUSWELL",
-      "exDate": "2025-09-18",
-      "subject": "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 2/- Per Share",
-      "raw_sma_jump": 0.996064,
-      "adj_sma_jump": 1.001536,
-      "adjusted_smoother": true
+      "symbol": "MEGASOFT",
+      "exDate": "2021-07-12",
+      "subject": " Rights 2:3",
+      "raw_sma_jump": 1.003142,
+      "adj_sma_jump": 1.003142,
+      "adjusted_smoother": false
     }
   ],
-  "generated_at": "2026-04-10T20:32:52.928796"
+  "generated_at": "2026-05-26T20:22:54.680979"
 }

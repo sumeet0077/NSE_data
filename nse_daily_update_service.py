@@ -593,35 +593,40 @@ def save_state(state: dict[str, object]) -> None:
     STATE_PATH.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
 
-def next_slot_datetime(now_ist: dt.datetime, slots: list[int]) -> dt.datetime:
+def get_slot_id(hour: int, minute: int) -> str | int:
+    return hour if minute == 0 else f"{hour}:{minute:02d}"
+
+
+def next_slot_datetime(now_ist: dt.datetime, slots: list[tuple[int, int]]) -> dt.datetime:
     today = now_ist.date()
     candidates: list[dt.datetime] = []
     for day_delta in (0, 1):
         day = today + dt.timedelta(days=day_delta)
-        for hour in slots:
+        for hour, minute in slots:
             candidates.append(
-                dt.datetime(day.year, day.month, day.day, hour, 0, 0, tzinfo=now_ist.tzinfo)
+                dt.datetime(day.year, day.month, day.day, hour, minute, 0, tzinfo=now_ist.tzinfo)
             )
     future = [x for x in candidates if x > now_ist]
     return min(future)
 
 
-def should_attempt_slot(state: dict[str, object], trade_date: dt.date, hour: int) -> bool:
+def should_attempt_slot(state: dict[str, Any], trade_date: dt.date, slot: tuple[int, int]) -> bool:
     date_key = trade_date.isoformat()
     if state.get("date") != date_key:
         return True
     # ALLOW re-checking later slots even if already successful (to catch late corporate actions)
     attempted = set(state.get("attempted_hours", []))
-    return hour not in attempted
+    slot_id = get_slot_id(slot[0], slot[1])
+    return slot_id not in attempted and str(slot_id) not in attempted and (int(slot_id) if isinstance(slot_id, int) else None) not in attempted
 
 
 def record_slot_attempt(
-    state: dict[str, object],
+    state: dict[str, Any],
     trade_date: dt.date,
-    hour: int,
+    slot: tuple[int, int],
     success: bool,
     message: str,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     date_key = trade_date.isoformat()
     if state.get("date") != date_key:
         state = {
@@ -632,14 +637,15 @@ def record_slot_attempt(
             "updated_at": "",
         }
     attempted = list(state.get("attempted_hours", []))
-    if hour not in attempted:
-        attempted.append(hour)
-    state["attempted_hours"] = sorted(attempted)
+    slot_id = get_slot_id(slot[0], slot[1])
+    if slot_id not in attempted and str(slot_id) not in attempted and (int(slot_id) if isinstance(slot_id, int) else None) not in attempted:
+        attempted.append(slot_id)
+    state["attempted_hours"] = attempted
     state["success"] = bool(success)
     state["last_message"] = message
     state["updated_at"] = dt.datetime.now().isoformat()
     if success:
-        state["success_hour"] = hour
+        state["success_hour"] = slot_id
     save_state(state)
     return state
 
@@ -647,36 +653,38 @@ def record_slot_attempt(
 def run_missed_slots_catchup(
     session: requests.Session,
     require_delivery: bool,
-    slots: list[int],
+    slots: list[tuple[int, int]],
     timezone: str,
 ) -> None:
     tz = ZoneInfo(timezone)
     now = dt.datetime.now(tz)
     today = now.date()
-    current_hour = now.hour
     state = load_state()
 
-    for slot_hour in slots:
-        if slot_hour > current_hour:
+    for slot in slots:
+        slot_hour, slot_minute = slot
+        slot_time = dt.time(slot_hour, slot_minute)
+        if slot_time > now.time():
             continue
-        if not should_attempt_slot(state, today, slot_hour):
+        if not should_attempt_slot(state, today, slot):
             continue
 
-        logging.info("Catch-up attempt for missed/past slot=%02d:00 date=%s", slot_hour, today)
+        slot_str = f"{slot_hour:02d}:{slot_minute:02d}"
+        logging.info("Catch-up attempt for missed/past slot=%s date=%s", slot_str, today)
         
         # Strategy: Relax delivery requirement for early slots (before 18:00 IST)
         # to get price data live ASAP. Later slots will automatically fill it in.
         effective_require_delivery = require_delivery if slot_hour >= 18 else False
         if not effective_require_delivery and require_delivery:
-            logging.info("Relaxing delivery requirement for early catch-up slot %02d:00", slot_hour)
+            logging.info("Relaxing delivery requirement for early catch-up slot %s", slot_str)
 
         success, msg = update_for_date(session, today, require_delivery=effective_require_delivery)
-        state = record_slot_attempt(state, today, slot_hour, success, msg)
+        state = record_slot_attempt(state, today, slot, success, msg)
         if success:
-            logging.info("Catch-up SUCCESS date=%s slot=%02d:00 %s", today, slot_hour, msg)
+            logging.info("Catch-up SUCCESS date=%s slot=%s %s", today, slot_str, msg)
             run_post_process()
             return
-        logging.warning("Catch-up FAILED date=%s slot=%02d:00 %s", today, slot_hour, msg)
+        logging.warning("Catch-up FAILED date=%s slot=%s %s", today, slot_str, msg)
 
 
 
@@ -738,7 +746,7 @@ def run_multi_day_catchup(
     return updates_performed
 
 
-def run_service(require_delivery: bool, slots: list[int], timezone: str) -> None:
+def run_service(require_delivery: bool, slots: list[tuple[int, int]], timezone: str) -> None:
     tz = ZoneInfo(timezone)
     session = requests.Session()
     session.headers.update({"Accept-Language": "en-US,en;q=0.9"})
@@ -778,28 +786,38 @@ def run_service(require_delivery: bool, slots: list[int], timezone: str) -> None
             time.sleep(min(remaining, 60.0))
 
         trade_date = slot_dt.date()
-        hour = slot_dt.hour
+        
+        # Find the matching slot tuple
+        matching_slot = None
+        for s in slots:
+            if s[0] == slot_dt.hour and s[1] == slot_dt.minute:
+                matching_slot = s
+                break
+        if not matching_slot:
+            matching_slot = (slot_dt.hour, slot_dt.minute)
+            
         state = load_state()
 
-        if not should_attempt_slot(state, trade_date, hour):
-            logging.info("Skipping slot %s: already attempted or success achieved for date %s", hour, trade_date)
+        if not should_attempt_slot(state, trade_date, matching_slot):
+            logging.info("Skipping slot %02d:%02d: already attempted or success achieved for date %s", slot_dt.hour, slot_dt.minute, trade_date)
             continue
 
-        logging.info("Running update attempt for trade_date=%s at slot=%02d:00", trade_date, hour)
+        slot_str = f"{slot_dt.hour:02d}:{slot_dt.minute:02d}"
+        logging.info("Running update attempt for trade_date=%s at slot=%s", trade_date, slot_str)
         
         # Strategy: Relax delivery requirement for early slots (before 18:00 IST)
-        effective_require_delivery = require_delivery if hour >= 18 else False
+        effective_require_delivery = require_delivery if slot_dt.hour >= 18 else False
         if not effective_require_delivery and require_delivery:
-            logging.info("Relaxing delivery requirement for early slot %02d:00", hour)
+            logging.info("Relaxing delivery requirement for early slot %s", slot_str)
 
         success, msg = update_for_date(session, trade_date, require_delivery=effective_require_delivery)
-        state = record_slot_attempt(state, trade_date, hour, success, msg)
+        state = record_slot_attempt(state, trade_date, matching_slot, success, msg)
         if success:
-            logging.info("SUCCESS date=%s slot=%02d:00 %s", trade_date, hour, msg)
+            logging.info("SUCCESS date=%s slot=%s %s", trade_date, slot_str, msg)
             # Trigger adjustment build
             run_post_process()
         else:
-            logging.warning("FAILED date=%s slot=%02d:00 %s", trade_date, hour, msg)
+            logging.warning("FAILED date=%s slot=%s %s", trade_date, slot_str, msg)
 
 
 def run_once(trade_date: dt.date, require_delivery: bool) -> int:
@@ -840,16 +858,25 @@ def parse_date_or_today(date_str: str, timezone: str) -> dt.date:
     return dt.datetime.now(ZoneInfo(timezone)).date()
 
 
-def parse_slots(slot_str: str) -> list[int]:
-    out: list[int] = []
+def parse_slots(slot_str: str) -> list[tuple[int, int]]:
+    out: list[tuple[int, int]] = []
     for item in slot_str.split(","):
-        v = int(item.strip())
-        if v < 0 or v > 23:
-            raise ValueError(f"Invalid hour: {v}")
-        out.append(v)
+        item = item.strip()
+        if not item:
+            continue
+        if ":" in item:
+            parts = item.split(":")
+            h = int(parts[0].strip())
+            m = int(parts[1].strip())
+        else:
+            h = int(item)
+            m = 0
+        if h < 0 or h > 23 or m < 0 or m > 59:
+            raise ValueError(f"Invalid slot time: {item}")
+        out.append((h, m))
     if not out:
         raise ValueError("No slots provided")
-    return sorted(set(out))
+    return sorted(list(set(out)))
 
 
 def main() -> int:
