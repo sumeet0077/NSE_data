@@ -561,7 +561,7 @@ def update_for_date(
     if daily_file.exists():
         try:
             existing_daily = pd.read_parquet(daily_file)
-            if not existing_daily.empty and int(existing_daily["deliv_pct"].notna().sum()) > 0:
+            if not existing_daily.empty and (not require_delivery or int(existing_daily["deliv_pct"].notna().sum()) > 0):
                 merge_into_master(existing_daily, trade_date)
                 update_metadata()
                 return True, "already_present_daily_cache_remerged"
@@ -612,20 +612,34 @@ def next_slot_datetime(now_ist: dt.datetime, slots: list[tuple[int, int]]) -> dt
     return min(future)
 
 
-def should_attempt_slot(state: dict[str, Any], trade_date: dt.date, slot: tuple[int, int]) -> bool:
+def _normalize_slot(slot: tuple[int, int] | int | str) -> tuple[int, int]:
+    if isinstance(slot, tuple) and len(slot) == 2:
+        return (int(slot[0]), int(slot[1]))
+    if isinstance(slot, int):
+        return (slot, 0)
+    if isinstance(slot, str):
+        if ":" in slot:
+            parts = slot.split(":")
+            return (int(parts[0]), int(parts[1]))
+        return (int(slot), 0)
+    return (int(slot), 0)
+
+
+def should_attempt_slot(state: dict[str, Any], trade_date: dt.date, slot: tuple[int, int] | int | str) -> bool:
     date_key = trade_date.isoformat()
     if state.get("date") != date_key:
         return True
     # ALLOW re-checking later slots even if already successful (to catch late corporate actions)
     attempted = set(state.get("attempted_hours", []))
-    slot_id = get_slot_id(slot[0], slot[1])
+    norm_slot = _normalize_slot(slot)
+    slot_id = get_slot_id(norm_slot[0], norm_slot[1])
     return slot_id not in attempted and str(slot_id) not in attempted and (int(slot_id) if isinstance(slot_id, int) else None) not in attempted
 
 
 def record_slot_attempt(
     state: dict[str, Any],
     trade_date: dt.date,
-    slot: tuple[int, int],
+    slot: tuple[int, int] | int | str,
     success: bool,
     message: str,
 ) -> dict[str, Any]:
@@ -639,7 +653,8 @@ def record_slot_attempt(
             "updated_at": "",
         }
     attempted = list(state.get("attempted_hours", []))
-    slot_id = get_slot_id(slot[0], slot[1])
+    norm_slot = _normalize_slot(slot)
+    slot_id = get_slot_id(norm_slot[0], norm_slot[1])
     if slot_id not in attempted and str(slot_id) not in attempted and (int(slot_id) if isinstance(slot_id, int) else None) not in attempted:
         attempted.append(slot_id)
     state["attempted_hours"] = attempted
@@ -703,10 +718,11 @@ def run_multi_day_catchup(
     session: requests.Session,
     require_delivery: bool,
     timezone: str,
+    up_to_date: dt.date | None = None,
 ) -> bool:
     """
     Checks if multiple days have been missed (e.g. laptop closed for days).
-    Runs updates for all missing weekdays between last_success and today.
+    Runs updates for all missing dates between last_success and up_to_date (default today).
     Returns True if ANY update was performed (so we can trigger post-process once).
     """
     meta = load_metadata_safe()
@@ -720,22 +736,26 @@ def run_multi_day_catchup(
         return False
 
     tz = ZoneInfo(timezone)
-    today = dt.datetime.now(tz).date()
+    target_end = up_to_date or dt.datetime.now(tz).date()
     
     # Safety: Don't look back too far to avoid infinite loops if something is wrong
-    if (today - last_date).days > 30:
+    if (target_end - last_date).days > 30:
         logging.warning("Last update was over 30 days ago (%s). Catch-up limit capped at 30 days.", last_date)
-        last_date = today - dt.timedelta(days=30)
+        last_date = target_end - dt.timedelta(days=30)
 
     # Start checking from the day AFTER the last successful update
     current = last_date + dt.timedelta(days=1)
     updates_performed = False
 
-    while current < today:
+    while current < target_end:
         # Try EVERY day. Markets can be open on weekends (Budget Sat/Sun, Mahurat Trading).
         # The fetcher handles "no data" gracefully (returns False).
         logging.info("Multi-day catch-up: Checking date %s", current)
         success, msg = update_for_date(session, current, require_delivery=require_delivery)
+        # If strict delivery check failed on a past date, retry without delivery requirement so price continuity is preserved
+        if not success and require_delivery and "delivery_missing" in msg:
+            logging.info("Multi-day catch-up: Delivery missing for past date %s, retrying with require_delivery=False", current)
+            success, msg = update_for_date(session, current, require_delivery=False)
         if success:
             logging.info("Multi-day catch-up SUCCESS for %s: %s", current, msg)
             updates_performed = True
