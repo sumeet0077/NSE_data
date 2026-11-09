@@ -1,153 +1,150 @@
 {
   "original_dataset_dir": "/Users/sumeetdas/Antigravity_NSE_Data/nse_master_bhav_with_delivery_2014_onwards.parquet",
   "output_dataset_dir": "/Users/sumeetdas/Antigravity_NSE_Data/nse_master_adjusted_staging.parquet",
-  "rows": 6411808,
-  "unique_symbols": 5631,
+  "rows": 6793569,
+  "unique_symbols": 6515,
   "min_trade_date": "2014-01-01",
-  "max_trade_date": "2026-05-26",
+  "max_trade_date": "2026-11-09",
   "symbol_method_counts": {
-    "factors_reuse_stable": 3761,
-    "nse_corporate_actions": 1867,
-    "raw_no_adjustment": 3
+    "factors_reuse_stable": 4451,
+    "nse_corporate_actions": 2060,
+    "raw_no_adjustment": 3,
+    "yfinance_incremental": 1
   },
   "row_coverage_percent_by_method": {
-    "factors_reuse_stable": 36.719,
-    "nse_corporate_actions": 63.2535,
-    "raw_no_adjustment": 0.0275
+    "factors_reuse_stable": 36.354,
+    "nse_corporate_actions": 63.6442,
+    "yfinance_incremental": 0.0009,
+    "raw_no_adjustment": 0.0009
   },
   "per_year_row_coverage_percent_by_method": {
     "2014": {
-      "factors_reuse_stable": 38.9453,
-      "nse_corporate_actions": 61.0547
+      "factors_reuse_stable": 38.4564,
+      "nse_corporate_actions": 61.5436
     },
     "2015": {
-      "factors_reuse_stable": 36.8924,
-      "nse_corporate_actions": 63.1076
+      "factors_reuse_stable": 36.4031,
+      "nse_corporate_actions": 63.5969
     },
     "2016": {
-      "factors_reuse_stable": 35.842,
-      "nse_corporate_actions": 64.158
+      "factors_reuse_stable": 35.3602,
+      "nse_corporate_actions": 64.6398
     },
     "2017": {
-      "factors_reuse_stable": 33.8289,
-      "nse_corporate_actions": 66.1711
+      "factors_reuse_stable": 33.3059,
+      "nse_corporate_actions": 66.6941
     },
     "2018": {
-      "factors_reuse_stable": 33.4255,
-      "nse_corporate_actions": 66.5443,
-      "raw_no_adjustment": 0.0302
+      "factors_reuse_stable": 32.8482,
+      "nse_corporate_actions": 67.1518
     },
     "2019": {
-      "factors_reuse_stable": 33.1153,
-      "nse_corporate_actions": 66.84,
-      "raw_no_adjustment": 0.0447
+      "factors_reuse_stable": 32.5109,
+      "nse_corporate_actions": 67.4891
     },
     "2020": {
-      "factors_reuse_stable": 33.0711,
-      "nse_corporate_actions": 66.8832,
-      "raw_no_adjustment": 0.0457
+      "factors_reuse_stable": 32.4975,
+      "nse_corporate_actions": 67.5025
     },
     "2021": {
-      "factors_reuse_stable": 32.5013,
-      "nse_corporate_actions": 67.456,
-      "raw_no_adjustment": 0.0428
+      "factors_reuse_stable": 31.7968,
+      "nse_corporate_actions": 68.2032
     },
     "2022": {
-      "factors_reuse_stable": 33.3371,
-      "nse_corporate_actions": 66.6249,
-      "raw_no_adjustment": 0.038
+      "factors_reuse_stable": 32.3883,
+      "nse_corporate_actions": 67.6117
     },
     "2023": {
-      "factors_reuse_stable": 35.3188,
-      "nse_corporate_actions": 64.6458,
-      "raw_no_adjustment": 0.0355
+      "factors_reuse_stable": 34.1409,
+      "nse_corporate_actions": 65.8591
     },
     "2024": {
-      "factors_reuse_stable": 39.9267,
-      "nse_corporate_actions": 60.0388,
-      "raw_no_adjustment": 0.0345
+      "factors_reuse_stable": 38.506,
+      "nse_corporate_actions": 61.4924,
+      "raw_no_adjustment": 0.0017
     },
     "2025": {
-      "factors_reuse_stable": 43.6452,
-      "nse_corporate_actions": 56.3222,
-      "raw_no_adjustment": 0.0327
+      "factors_reuse_stable": 41.8697,
+      "nse_corporate_actions": 58.1289,
+      "raw_no_adjustment": 0.0014
     },
     "2026": {
-      "factors_reuse_stable": 47.8894,
-      "nse_corporate_actions": 52.084,
-      "raw_no_adjustment": 0.0265
+      "factors_reuse_stable": 46.0293,
+      "nse_corporate_actions": 53.9567,
+      "raw_no_adjustment": 0.0056,
+      "yfinance_incremental": 0.0084
     }
   },
-  "value_changed_rows_percent": 52.3067,
+  "value_changed_rows_percent": 54.3112,
   "per_year_abs_dev_stats": {
     "2014": {
-      "mean_abs_dev": 0.19457200169563293,
-      "median_abs_dev": 0.032561998814344406,
+      "mean_abs_dev": 0.19827799499034882,
+      "median_abs_dev": 0.03623199835419655,
       "rows": 386388
     },
     "2015": {
-      "mean_abs_dev": 0.18399299681186676,
-      "median_abs_dev": 0.0329740010201931,
+      "mean_abs_dev": 0.18850800395011902,
+      "median_abs_dev": 0.036827001720666885,
       "rows": 391769
     },
     "2016": {
-      "mean_abs_dev": 0.17165300250053406,
-      "median_abs_dev": 0.027652999386191368,
+      "mean_abs_dev": 0.17683100700378418,
+      "median_abs_dev": 0.03111400082707405,
       "rows": 409163
     },
     "2017": {
-      "mean_abs_dev": 0.16414299607276917,
-      "median_abs_dev": 0.027652999386191368,
+      "mean_abs_dev": 0.1702830046415329,
+      "median_abs_dev": 0.031039999797940254,
       "rows": 437241
     },
     "2018": {
-      "mean_abs_dev": 0.1538809984922409,
-      "median_abs_dev": 0.023364000022411346,
+      "mean_abs_dev": 0.1604200005531311,
+      "median_abs_dev": 0.026309000328183174,
       "rows": 463036
     },
     "2019": {
-      "mean_abs_dev": 0.14229300618171692,
-      "median_abs_dev": 0.017867999151349068,
+      "mean_abs_dev": 0.14898599684238434,
+      "median_abs_dev": 0.021594999358057976,
       "rows": 470085
     },
     "2020": {
-      "mean_abs_dev": 0.13481099903583527,
-      "median_abs_dev": 0.01400499977171421,
+      "mean_abs_dev": 0.14188100397586823,
+      "median_abs_dev": 0.01699800044298172,
       "rows": 494081
     },
     "2021": {
-      "mean_abs_dev": 0.12954799830913544,
-      "median_abs_dev": 0.01176500041037798,
+      "mean_abs_dev": 0.13734300434589386,
+      "median_abs_dev": 0.014724000357091427,
       "rows": 512266
     },
     "2022": {
-      "mean_abs_dev": 0.11337000131607056,
-      "median_abs_dev": 0.008066000416874886,
+      "mean_abs_dev": 0.12261900305747986,
+      "median_abs_dev": 0.011251999996602535,
       "rows": 555537
     },
     "2023": {
-      "mean_abs_dev": 0.09113100171089172,
-      "median_abs_dev": 0.004149000160396099,
+      "mean_abs_dev": 0.10118400305509567,
+      "median_abs_dev": 0.0066269999369978905,
       "rows": 597750
     },
     "2024": {
-      "mean_abs_dev": 0.05685599893331528,
-      "median_abs_dev": 0.0,
+      "mean_abs_dev": 0.06757199764251709,
+      "median_abs_dev": 0.0016670000040903687,
       "rows": 660303
     },
     "2025": {
-      "mean_abs_dev": 0.02235499955713749,
+      "mean_abs_dev": 0.03340400010347366,
       "median_abs_dev": 0.0,
       "rows": 725290
     },
     "2026": {
-      "mean_abs_dev": 0.003220000071451068,
+      "mean_abs_dev": 0.009550999850034714,
       "median_abs_dev": 0.0,
-      "rows": 308899
+      "rows": 690660
     }
   },
-  "recent_2y_outlier_rows_pct_gt_10pct": 3.729251,
-  "recent_2y_mean_abs_adjustment_deviation": 0.025676,
+  "recent_2y_outlier_rows_pct_gt_10pct": 3.294133,
+  "recent_2y_mean_abs_adjustment_deviation": 0.023547,
   "known_action_tests": [
     {
       "symbol": "RELIANCE",
@@ -242,37 +239,13 @@
   ],
   "sma_discontinuity_checks": [
     {
-      "symbol": "HINDWAREAP",
-      "exDate": "2024-10-25",
-      "subject": "Rights 119:758 @ Premium Rs 218/-",
-      "raw_sma_jump": 0.99734,
-      "adj_sma_jump": 0.997519,
+      "symbol": "INFY",
+      "exDate": "2014-12-02",
+      "subject": "Bonus 1:1",
+      "raw_sma_jump": 0.997862,
+      "adj_sma_jump": 1.001008,
       "adjusted_smoother": true
-    },
-    {
-      "symbol": "LIKHITHA",
-      "exDate": "2022-12-02",
-      "subject": "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 5/- Per Share",
-      "raw_sma_jump": 0.998876,
-      "adj_sma_jump": 1.003037,
-      "adjusted_smoother": false
-    },
-    {
-      "symbol": "VSSL",
-      "exDate": "2017-04-07",
-      "subject": " Rights 2:3 @ Premium Rs 40/-",
-      "raw_sma_jump": 1.001478,
-      "adj_sma_jump": 1.003567,
-      "adjusted_smoother": false
-    },
-    {
-      "symbol": "MEGASOFT",
-      "exDate": "2021-07-12",
-      "subject": " Rights 2:3",
-      "raw_sma_jump": 1.003142,
-      "adj_sma_jump": 1.003142,
-      "adjusted_smoother": false
     }
   ],
-  "generated_at": "2026-05-26T20:22:54.680979"
+  "generated_at": "2026-11-10T01:22:37.020607"
 }

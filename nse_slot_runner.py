@@ -53,9 +53,6 @@ def main() -> int:
 
     require_delivery = not args.allow_missing_delivery
     state = svc.load_state()
-    if not svc.should_attempt_slot(state, trade_date, args.hour):
-        logging.info("Skipping slot=%02d:00 date=%s: already succeeded/attempted", args.hour, trade_date)
-        return 0
 
     session = requests.Session()
     session.headers.update({"Accept-Language": "en-US,en;q=0.9"})
@@ -64,11 +61,25 @@ def main() -> int:
     except Exception:
         pass
 
+    # Multi-day catch-up: automatically detect and backfill any missing weekend/holiday sessions (e.g. Muhurat trading)
+    catchup_performed = svc.run_multi_day_catchup(session, require_delivery=require_delivery, timezone=args.timezone)
+    if catchup_performed:
+        logging.info("Multi-day catch-up performed updates for previous missing sessions.")
+
+    if not svc.should_attempt_slot(state, trade_date, args.hour):
+        logging.info("Skipping slot=%02d:00 date=%s: already succeeded/attempted", args.hour, trade_date)
+        if catchup_performed:
+            logging.info("Triggering post-process due to multi-day catch-up...")
+            svc.run_post_process()
+        return 0
+
     logging.info("Running timer slot attempt date=%s slot=%02d:00 require_delivery=%s", trade_date, args.hour, require_delivery)
     ok, msg = svc.update_for_date(session, trade_date, require_delivery=require_delivery)
     svc.record_slot_attempt(state, trade_date, args.hour, ok, msg)
-    if ok:
-        logging.info("SLOT SUCCESS date=%s slot=%02d:00 %s", trade_date, args.hour, msg)
+    if ok or catchup_performed:
+        if ok:
+            logging.info("SLOT SUCCESS date=%s slot=%02d:00 %s", trade_date, args.hour, msg)
+        svc.run_post_process()
         return 0
     logging.warning("SLOT FAILED date=%s slot=%02d:00 %s", trade_date, args.hour, msg)
     return 1

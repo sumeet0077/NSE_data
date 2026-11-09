@@ -96,9 +96,11 @@ def run_post_process() -> bool:
             [
                 sys.executable, 
                 str(builder_script), 
+                "--orig-dir", str(WORKDIR / "nse_master_bhav_with_delivery_2014_onwards.parquet"),
                 "--out-dir", str(staging_output), 
                 "--report-path", str(staging_report)
             ],
+            cwd=str(WORKDIR),
             capture_output=True,
             text=True,
             check=True
