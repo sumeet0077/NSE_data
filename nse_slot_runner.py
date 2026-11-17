@@ -78,11 +78,20 @@ def main() -> int:
     if catchup_performed:
         logging.info("Multi-day catch-up performed updates for previous missing sessions.")
 
+    # Retry Resiliency: If data update already succeeded today, but frontend build failed,
+    # retry frontend build directly in subsequent slots (19:00, 20:00) instead of skipping.
+    if state.get("date") == trade_date.isoformat() and state.get("success") and not state.get("frontend_success", True):
+        logging.info("Data update previously succeeded, but frontend build failed. Retrying frontend build in slot %s...", slot_id)
+        frontend_ok = svc.run_frontend_build_step()
+        state["frontend_success"] = frontend_ok
+        svc.record_slot_attempt(state, trade_date, slot, True, f"frontend_retry_result={frontend_ok}")
+        return 0 if frontend_ok else 1
+
     if not svc.should_attempt_slot(state, trade_date, slot):
         logging.info("Skipping slot=%s date=%s: already succeeded/attempted", slot_id, trade_date)
         if catchup_performed:
             logging.info("Triggering post-process due to multi-day catch-up...")
-            svc.run_post_process()
+            svc.run_post_process(trade_date=trade_date)
         return 0
 
     # Strategy: Relax delivery requirement for early slots (before 18:00 IST), matching nse_daily_update_service
@@ -95,13 +104,13 @@ def main() -> int:
     svc.record_slot_attempt(state, trade_date, slot, ok, msg)
     if ok:
         logging.info("SLOT SUCCESS date=%s slot=%s %s", trade_date, slot_id, msg)
-        svc.run_post_process()
+        svc.run_post_process(trade_date=trade_date)
         return 0
 
     logging.warning("SLOT FAILED date=%s slot=%s %s", trade_date, slot_id, msg)
     if catchup_performed:
         logging.info("Triggering post-process due to multi-day catch-up despite current slot failure...")
-        svc.run_post_process()
+        svc.run_post_process(trade_date=trade_date)
     return 1
 
 

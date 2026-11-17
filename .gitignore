@@ -9,6 +9,7 @@ __pycache__/
 *.log.*
 *.parquet
 *.parquet.*
+!applied_actions_registry.parquet
 raw_downloads/
 processed/
 daily_update_state.json
