@@ -216,6 +216,11 @@ class MultiPartitionTransaction:
                         os.replace(bak, target)
                     except Exception as rb_exc:
                         logging.critical("CRITICAL: Rollback failed for %s: %s", target, rb_exc)
+                elif target.exists():
+                    try:
+                        target.unlink()
+                    except Exception:
+                        pass
             raise
         finally:
             # Phase 3: Cleanup backups and any leftover temporary files
@@ -664,10 +669,11 @@ def update_metadata_fast() -> dict[str, Any]:
             rows_2015_plus += num_rows
             col_idx = pf.schema_arrow.get_field_index("deliv_pct")
             if col_idx >= 0:
-                nulls = sum(
-                    pf.metadata.row_group(rg).column(col_idx).statistics.null_count
-                    for rg in range(pf.metadata.num_row_groups)
-                )
+                nulls = 0
+                for rg in range(pf.metadata.num_row_groups):
+                    st = pf.metadata.row_group(rg).column(col_idx).statistics
+                    if st and st.has_null_count:
+                        nulls += st.null_count
                 rows_with_deliv_2015_plus += (num_rows - nulls)
 
         date_idx = pf.schema_arrow.get_field_index("trade_date")
@@ -753,31 +759,33 @@ def sync_daily_rows_to_adjusted(year: int, trade_date: dt.date | None = None) ->
         adj_tbl = pf_adj.read()
         adj_df = adj_tbl.to_pandas()
 
-        # Identify missing or updated rows by trade_date
+        # Identify missing or updated rows by trade_date, catching all gap dates from catch-up
+        existing_dates = set(adj_df["trade_date"].unique())
+        raw_dates = set(raw_df["trade_date"].unique())
+        missing_dates = raw_dates - existing_dates
+
+        dates_to_sync = set(missing_dates)
         if trade_date is not None:
-            td_ts = pd.Timestamp(trade_date)
-            new_rows = raw_df[raw_df["trade_date"] == td_ts].copy()
+            dates_to_sync.add(pd.Timestamp(trade_date))
+        else:
+            dates_to_sync.update(raw_dates)
+
+        if dates_to_sync:
+            adj_df = adj_df[~adj_df["trade_date"].isin(dates_to_sync)]
+            new_rows = raw_df[raw_df["trade_date"].isin(dates_to_sync)].copy()
             if not new_rows.empty:
-                adj_df = adj_df[adj_df["trade_date"] != td_ts]
                 for col in ["open", "high", "low", "close"]:
                     new_rows[f"adj_{col}"] = new_rows[col].astype("float32")
                 adj_df = pd.concat([adj_df, new_rows], ignore_index=True)
-        else:
-            # Full sync if dates not specified
-            existing_dates = set(adj_df["trade_date"].unique())
-            missing_rows = raw_df[~raw_df["trade_date"].isin(existing_dates)].copy()
-            if not missing_rows.empty:
-                for col in ["open", "high", "low", "close"]:
-                    missing_rows[f"adj_{col}"] = missing_rows[col].astype("float32")
-                adj_df = pd.concat([adj_df, missing_rows], ignore_index=True)
 
     adj_df = adj_df.sort_values(["trade_date", "symbol"]).reset_index(drop=True)
 
-    # Convert back to PyArrow with strict schema
+    # Convert back to PyArrow with strict schema matching raw partition trade_date type
+    raw_td_type = pf_raw.schema_arrow.field("trade_date").type
     target_fields = [
         pa.field("symbol", pa.string()),
         pa.field("series", pa.string()),
-        pa.field("trade_date", pa.timestamp("ns")),
+        pa.field("trade_date", raw_td_type),
         pa.field("open", pa.float32()),
         pa.field("high", pa.float32()),
         pa.field("low", pa.float32()),
@@ -940,11 +948,21 @@ def run_surgical_update(trade_date: dt.date | None = None, trigger_frontend: boo
     unapplied_actions: list[dict[str, Any]] = []
 
     if not ca_df.empty:
-        # Load trading dates from current year
-        curr_part = ADJ_MASTER_DIR / f"year={trade_date.year}" / f"part-{trade_date.year}.parquet"
-        pf_curr = pq.ParquetFile(curr_part)
-        tbl_dates = pf_curr.read(columns=["trade_date"])
-        trading_dates = pd.DatetimeIndex(pd.to_datetime(tbl_dates["trade_date"].to_pandas()).dt.floor("D").unique()).sort_values()
+        # Load trading dates covering [trade_date - 45 days, trade_date + 15 days]
+        window_start = trade_date - dt.timedelta(days=45)
+        window_years = {window_start.year, trade_date.year}
+        trading_date_list = []
+        for y in sorted(window_years):
+            part_path = ADJ_MASTER_DIR / f"year={y}" / f"part-{y}.parquet"
+            if not part_path.exists():
+                part_path = RAW_MASTER_DIR / f"year={y}" / f"part-{y}.parquet"
+            if part_path.exists():
+                pf_dates = pq.ParquetFile(part_path)
+                tbl_dates = pf_dates.read(columns=["trade_date"])
+                trading_date_list.extend(tbl_dates["trade_date"].to_pandas().dt.floor("D").unique())
+        trading_dates = pd.DatetimeIndex(sorted(set(trading_date_list)))
+
+        non_actionable_to_record: list[dict[str, Any]] = []
 
         for rec in ca_df.to_dict(orient="records"):
             sym = str(rec.get("symbol", "") or "").strip()
@@ -970,16 +988,19 @@ def run_surgical_update(trade_date: dt.date | None = None, trigger_frontend: boo
             except Exception:
                 face_val = 0.0
             events = parse_subject(subj, face_val)
+            action_record = {
+                "action_id": act_id,
+                "symbol": sym,
+                "series": series,
+                "ex_date": ex_str,
+                "effective_date": eff_d,
+                "subject": subj,
+                "applied_at": dt.datetime.now().isoformat(),
+            }
             if events:
-                unapplied_actions.append({
-                    "action_id": act_id,
-                    "symbol": sym,
-                    "series": series,
-                    "ex_date": ex_str,
-                    "effective_date": eff_d,
-                    "subject": subj,
-                    "applied_at": dt.datetime.now().isoformat(),
-                })
+                unapplied_actions.append(action_record)
+            else:
+                non_actionable_to_record.append(action_record)
 
     # Step 6: Case B - Surgical Retro-Adjustment Mode (if unapplied actions exist)
     if unapplied_actions:
@@ -988,6 +1009,9 @@ def run_surgical_update(trade_date: dt.date | None = None, trigger_frontend: boo
         append_to_applied_registry(applied)
     else:
         logging.info("Zero unapplied corporate actions active today. 100% of historical partitions remain exact & untouched on disk.")
+
+    if non_actionable_to_record:
+        append_to_applied_registry(non_actionable_to_record)
 
     # Step 7: Fast Metadata Update
     meta = update_metadata_fast()

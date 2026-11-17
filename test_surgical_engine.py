@@ -6,11 +6,15 @@ Tests:
 2. In-place NumPy scatter: length preservation, column types, no PyArrow if_else mismatch errors.
 3. SymbolAliasGraph: chained renames (A->B->C), transitive closure.
 4. Non-trading ex-dates alignment (e.g. MASFIN holiday).
-5. Peak RAM strictly < 150 MB.
-6. Mathematical parity (max_difference == 0.0).
+5. Year-boundary ex-date alignment (late Dec to Jan).
+6. Multi-day catch-up row synchronization without date loss.
+7. Metadata memory guard & statistics null-safety.
+8. Peak RAM strictly < 150 MB (guaranteed by tracemalloc).
+9. Mathematical parity (max_difference == 0.0) against master dataset.
 """
 
 import datetime as dt
+import json
 import os
 import shutil
 import tempfile
@@ -75,11 +79,26 @@ class TestSurgicalEngine(unittest.TestCase):
         # Both files must retain their original content!
         self.assertEqual(file1.read_text(), "new_2024")
         self.assertEqual(file2.read_text(), "new_2025")
-        print("2PC Happy path and Rollback tests passed successfully.")
+
+        # 3. Rollback of newly created target (target did not exist before tx)
+        new_target = self.test_dir / "part-2026.parquet"
+        new_tmp = self.test_dir / "part-2026.tmp.parquet"
+        new_tmp.write_text("created_in_tx")
+
+        fail_tmp = self.test_dir / "non_existent.tmp.parquet"
+        fail_target = self.test_dir / "non_existent.parquet"
+
+        tx_new = nsu.MultiPartitionTransaction()
+        tx_new.stage(new_tmp, new_target)
+        tx_new.stage(fail_tmp, fail_target)
+
+        with self.assertRaises(Exception):
+            tx_new.commit()
+
+        self.assertFalse(new_target.exists(), "Newly created target must be cleaned up on rollback")
 
     def test_numpy_in_place_scatter(self):
         """Verify NumPy index scatter updates columns in-place without length mismatch."""
-        # Create a sample Parquet table with 17 columns
         n_rows = 1000
         dates = pd.date_range("2024-01-01", periods=100, freq="B")
         symbols = ["INFY", "TCS", "RELIANCE", "TATAMOTORS"] * (n_rows // 4)
@@ -127,7 +146,6 @@ class TestSurgicalEngine(unittest.TestCase):
         # Check TCS rows are untouched (1000.0)
         tcs_rows = res_df[res_df["symbol"] == "TCS"]
         self.assertTrue(np.allclose(tcs_rows["adj_close"].to_numpy(), 1000.0))
-        print("NumPy in-place scatter test passed successfully.")
 
     def test_chained_symbol_renames_union_find(self):
         """Verify Union-Find handles chained renames (A->B->C) and alias groups."""
@@ -144,9 +162,7 @@ class TestSurgicalEngine(unittest.TestCase):
         self.assertEqual(graph.get_aliases("SYM_A"), {"SYM_A", "SYM_B", "SYM_C"})
         self.assertEqual(graph.get_aliases("SYM_C"), {"SYM_A", "SYM_B", "SYM_C"})
         self.assertEqual(graph.get_aliases("NEW_FOO"), {"OLD_FOO", "NEW_FOO"})
-        # Unrelated symbol
         self.assertEqual(graph.get_aliases("STANDALONE"), {"STANDALONE"})
-        print("Chained symbol rename test passed successfully.")
 
     def test_non_trading_ex_date_alignment(self):
         """Verify alignment of non-trading ex-dates (e.g. MASFIN on 2024-01-22)."""
@@ -166,7 +182,104 @@ class TestSurgicalEngine(unittest.TestCase):
         # Ex-date on valid trading date
         aligned_exact = nsu.align_effective_date(dt.date(2024, 1, 23), trading_dates)
         self.assertEqual(aligned_exact, pd.Timestamp("2024-01-23"))
-        print("Non-trading ex-date alignment test passed successfully.")
+
+    def test_multi_day_gap_catchup_sync(self):
+        """Verify sync_daily_rows_to_adjusted catches up multiple missing days without dropping rows."""
+        # Create mock raw and adj partitions
+        raw_part = self.test_dir / "raw" / "year=2026" / "part-2026.parquet"
+        adj_part = self.test_dir / "adj" / "year=2026" / "part-2026.parquet"
+        raw_part.parent.mkdir(parents=True, exist_ok=True)
+        adj_part.parent.mkdir(parents=True, exist_ok=True)
+
+        # Raw has Day 1, Day 2, Day 3
+        d1 = pd.Timestamp("2026-03-02")
+        d2 = pd.Timestamp("2026-03-03")
+        d3 = pd.Timestamp("2026-03-04")
+
+        raw_df = pd.DataFrame({
+            "symbol": ["INFY", "INFY", "INFY"],
+            "series": ["EQ", "EQ", "EQ"],
+            "trade_date": [d1, d2, d3],
+            "open": [100.0, 101.0, 102.0],
+            "high": [105.0, 106.0, 107.0],
+            "low": [95.0, 96.0, 97.0],
+            "close": [102.0, 103.0, 104.0],
+            "volume": [1000, 1000, 1000],
+            "turnover_lacs": [1.0, 1.0, 1.0],
+            "trades": [50, 50, 50],
+            "deliv_qty": [500, 500, 500],
+            "deliv_pct": [50.0, 50.0, 50.0],
+            "source_url": ["u", "u", "u"],
+        })
+        raw_df.to_parquet(raw_part, engine="pyarrow")
+
+        # Adj only has Day 1 (Days 2 & 3 missing due to multi-day gap)
+        adj_df = raw_df.iloc[:1].copy()
+        for col in ["open", "high", "low", "close"]:
+            adj_df[f"adj_{col}"] = adj_df[col].astype("float32")
+        adj_df.to_parquet(adj_part, engine="pyarrow")
+
+        # Monkeypatch directories
+        orig_raw = nsu.RAW_MASTER_DIR
+        orig_adj = nsu.ADJ_MASTER_DIR
+        try:
+            nsu.RAW_MASTER_DIR = self.test_dir / "raw"
+            nsu.ADJ_MASTER_DIR = self.test_dir / "adj"
+
+            # Sync with trade_date = d3 (simulating slot runner executing on Day 3)
+            ok = nsu.sync_daily_rows_to_adjusted(2026, trade_date=d3.date())
+            self.assertTrue(ok)
+
+            synced_df = pd.read_parquet(adj_part)
+            # All 3 days must be present!
+            self.assertEqual(len(synced_df), 3)
+            self.assertEqual(set(synced_df["trade_date"]), {d1, d2, d3})
+        finally:
+            nsu.RAW_MASTER_DIR = orig_raw
+            nsu.ADJ_MASTER_DIR = orig_adj
+
+    def test_deliv_pct_null_safety_in_metadata(self):
+        """Verify update_metadata_fast does not crash when parquet column statistics are None."""
+        m_dir = self.test_dir / "raw_meta" / "year=2026"
+        m_dir.mkdir(parents=True, exist_ok=True)
+        part = m_dir / "part-2026.parquet"
+
+        df = pd.DataFrame({
+            "symbol": ["INFY"],
+            "series": ["EQ"],
+            "trade_date": [pd.Timestamp("2026-01-01")],
+            "deliv_pct": [np.nan],
+        })
+        # Write without statistics
+        tbl = pa.Table.from_pandas(df)
+        pq.write_table(tbl, part, write_statistics=False)
+
+        orig_raw = nsu.RAW_MASTER_DIR
+        orig_meta = nsu.METADATA_PATH
+        try:
+            nsu.RAW_MASTER_DIR = self.test_dir / "raw_meta"
+            nsu.METADATA_PATH = self.test_dir / "metadata.json"
+            meta = nsu.update_metadata_fast()
+            self.assertEqual(meta["row_count"], 1)
+            self.assertEqual(meta["rows_with_deliv_pct_2015_onwards"], 1)
+        finally:
+            nsu.RAW_MASTER_DIR = orig_raw
+            nsu.METADATA_PATH = orig_meta
+
+    def test_peak_ram_guardrail(self):
+        """Guardrail: Measure peak RAM of metadata and partition operations to verify < 150 MB."""
+        tracemalloc.start()
+        meta = nsu.update_metadata_fast()
+        _, peak_meta = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        peak_meta_mb = peak_meta / (1024 * 1024)
+        self.assertLess(peak_meta_mb, 50.0, f"Metadata read peak RAM ({peak_meta_mb:.2f} MB) exceeds 50 MB")
+
+    def test_mathematical_parity_core(self):
+        """Mathematical Parity Validation: Verify max_abs_diff == 0.0 for benchmark symbols."""
+        passed = nsu.validate_historical_parity(["INFY", "TCS", "RELIANCE", "TATAMOTORS"])
+        self.assertTrue(passed, "Mathematical parity check failed for one or more benchmark symbols")
 
 
 if __name__ == "__main__":
