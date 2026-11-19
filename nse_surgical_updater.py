@@ -1114,9 +1114,26 @@ def run_surgical_update(trade_date: dt.date | None = None, trigger_frontend: boo
     meta = update_metadata_fast()
     logging.info("Metadata footers updated: %d total rows, max_trade_date=%s", meta["row_count"], meta["max_trade_date"])
 
-    # Step 8: Trigger frontend build pipeline
+    # Step 8: Trigger frontend build pipeline (with idempotency guard)
     if trigger_frontend:
-        trigger_frontend_pipeline()
+        state = {}
+        if STATE_PATH.exists():
+            try:
+                state = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+            except Exception:
+                state = {}
+        already_built = (
+            state.get("date") == trade_date.isoformat()
+            and state.get("frontend_success") is True
+            and not unapplied_actions
+        )
+        if already_built:
+            logging.info(
+                "Frontend build already succeeded today (%s) and zero unapplied corporate actions detected. Skipping redundant frontend rebuild.",
+                trade_date,
+            )
+        else:
+            trigger_frontend_pipeline()
 
     elapsed = time.time() - t_start
     logging.info("Surgical Update completed successfully in %.2f seconds.", elapsed)
