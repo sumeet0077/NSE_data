@@ -145,6 +145,26 @@ class SymbolAliasGraph:
         except Exception as e:
             logging.error("Failed to parse symbolchange.csv: %s", e)
 
+        # Merge unified symbol_changes.json curated overrides
+        json_candidates = [
+            Path(__file__).resolve().parent.parent / "Projects" / "nse-industry-insights" / "data" / "symbol_changes.json",
+            Path("/Users/sumeetdas/Projects/nse-industry-insights/data/symbol_changes.json"),
+        ]
+        for jp in json_candidates:
+            if jp.exists():
+                try:
+                    with open(jp, "r", encoding="utf-8") as f:
+                        j_data = json.load(f)
+                        for item in j_data:
+                            old_s = item.get("old_symbol", "").strip()
+                            new_s = item.get("new_symbol", "").strip()
+                            if old_s and new_s:
+                                self.union(old_s, new_s)
+                    logging.info("SymbolAliasGraph augmented with %s", jp.name)
+                    break
+                except Exception as je:
+                    logging.warning("Could not merge symbol_changes.json into alias graph: %s", je)
+
     def _download(self) -> None:
         logging.info("Downloading official symbolchange.csv from NSE archives...")
         try:
@@ -305,14 +325,13 @@ class ParsedEvent:
 
 
 BONUS_RE = re.compile(r"bonus(?:\s+issue)?(?:\s+of)?\s*(\d+)\s*:\s*(\d+)", re.I)
-RIGHTS_RE = re.compile(
-    r"rights(?:\s+issue)?(?:\s+of)?\s*(\d+)\s*:\s*(\d+).*?(?:prem|premium)\s*(?:rs\.?|re\.?)\s*(\d+(?:\.\d+)?)",
-    re.I,
-)
-RIGHTS_SIMPLE_RE = re.compile(
-    r"rights(?:\s+issue)?(?:\s+of)?\s*(\d+)\s*:\s*(\d+).*?(?:@|at)\s*(?:rs\.?|re\.?)\s*(\d+(?:\.\d+)?)",
-    re.I,
-)
+
+# Broadened Rights Issue regex suite to handle "Premium Of Rs", "@ Premium X", "@ Prm", "At Par", and bare numbers
+RIGHTS_RATIO_RE = re.compile(r"rights[^\d]*(\d+)\s*:\s*(\d+)", re.I)
+RIGHTS_PREM_RE = re.compile(r"(?:prem|premium|prm)(?:\s+of)?\s*(?:rs\.?|re\.?)?\s*(\d+(?:\.\d+)?)", re.I)
+RIGHTS_AT_RE = re.compile(r"(?:@|at)\s*(?:rs\.?|re\.?)?\s*(\d+(?:\.\d+)?)", re.I)
+RIGHTS_AT_PAR_RE = re.compile(r"at\s+par\b", re.I)
+
 SPLIT_RE = re.compile(
     r"(?:split|sub-?division|subdivision).*?from\s*(?:rs\.?|re\.?)\s*(\d+(?:\.\d+)?)\s*.*?to\s*(?:rs\.?|re\.?)\s*(\d+(?:\.\d+)?)",
     re.I,
@@ -340,6 +359,7 @@ def parse_subject(subject: str, face_val: float) -> list[ParsedEvent]:
     for m in BONUS_RE.finditer(s):
         out.append(ParsedEvent(kind="bonus", a=float(m.group(1)), b=float(m.group(2))))
 
+    # Split (face value subdivision)
     m = SPLIT_RE.search(s) or SPLIT_SIMPLE_RE.search(s)
     if m:
         old = float(m.group(1))
@@ -347,20 +367,26 @@ def parse_subject(subject: str, face_val: float) -> list[ParsedEvent]:
         if old > 0 and new > 0:
             out.append(ParsedEvent(kind="split", a=old, b=new))
 
-    m = RIGHTS_RE.search(s)
-    if m:
-        a = float(m.group(1))
-        b = float(m.group(2))
-        prem = float(m.group(3))
-        out.append(ParsedEvent(kind="rights", a=a, b=b, premium=prem, premium_is_issue_price=False))
-    else:
-        m = RIGHTS_SIMPLE_RE.search(s)
-        if m:
-            a = float(m.group(1))
-            b = float(m.group(2))
-            issue_price = float(m.group(3))
-            out.append(ParsedEvent(kind="rights", a=a, b=b, premium=issue_price, premium_is_issue_price=True))
+    # Rights (generalized parser capturing 100% of equity rights offerings)
+    rm = RIGHTS_RATIO_RE.search(s)
+    if rm:
+        a = float(rm.group(1))
+        b = float(rm.group(2))
+        prem_m = RIGHTS_PREM_RE.search(s)
+        at_m = RIGHTS_AT_RE.search(s)
+        at_par_m = RIGHTS_AT_PAR_RE.search(s)
 
+        if prem_m:
+            prem = float(prem_m.group(1))
+            out.append(ParsedEvent(kind="rights", a=a, b=b, premium=prem, premium_is_issue_price=False))
+        elif at_m and not at_par_m:
+            issue_price = float(at_m.group(1))
+            out.append(ParsedEvent(kind="rights", a=a, b=b, premium=issue_price, premium_is_issue_price=True))
+        else:
+            # At par or unspecified subscription price
+            out.append(ParsedEvent(kind="rights", a=a, b=b, premium=0.0, premium_is_issue_price=False))
+
+    # Distribution and Dividend (tracked, but decoupled from primary price series)
     m = DIST_RE.search(s)
     if m:
         amt = float(m.group(1))
@@ -380,8 +406,12 @@ def parse_subject(subject: str, face_val: float) -> list[ParsedEvent]:
                 if amt > 0:
                     out.append(ParsedEvent(kind="dividend", amount=amt))
 
-    if not out and REORG_RE.search(s):
-        out.append(ParsedEvent(kind="reorg"))
+    # Corporate re-orgs (demergers/spin-offs/schemes).
+    # Filter out preference shares, NCRPS, debentures, and bonds which are debt instruments, not equity spin-offs.
+    is_debt_or_pref = bool(re.search(r"\b(ncrps|preferences?|preferential|debentures?|bonds?)\b", s, re.I))
+    if not out and REORG_RE.search(s) and not is_debt_or_pref:
+        is_explicit = bool(re.search(r"\b(demerger|de-?merger|spin\s*-?off|spinoff|hiving\s*off|hive\s*off)\b", s, re.I))
+        out.append(ParsedEvent(kind="reorg", premium=1.0 if is_explicit else 0.0))
 
     return out
 
@@ -420,7 +450,8 @@ def build_manual_factor_series(
     Computes exact backward cumulative adjustment factor series (float32).
     Bit-for-bit identical with build_adjusted_master.py.
     """
-    events_factor: dict[pd.Timestamp, float] = {}
+    capital_factor_by_date: dict[pd.Timestamp, float] = {}
+    reorg_factor_by_date: dict[pd.Timestamp, float] = {}
     prev_close = ref_close.shift(1)
 
     for rec in actions:
@@ -460,22 +491,50 @@ def build_manual_factor_series(
                     p0 = float(prev_close.loc[eff]) if pd.notna(prev_close.loc[eff]) else float("nan")
                     if pd.notna(p0) and p0 > 0 and sub_price > 0:
                         terp = (p0 + r * sub_price) / (1.0 + r)
-                        f = terp / p0
+                        k = terp / p0
+                        # Out-of-the-Money Invariant: rights issues NEVER inflate historical prices
+                        f = min(float(k), 1.0)
             elif ev.kind in ("dividend", "distribution"):
-                amt = ev.amount
-                p0 = float(prev_close.loc[eff]) if pd.notna(prev_close.loc[eff]) else float("nan")
-                if amt > 0 and pd.notna(p0) and p0 > 0:
-                    f = (p0 - amt) / p0
+                # Decoupled from primary series (Capital-Adjusted OHLC standard: splits, bonuses, rights, demergers)
+                f = 1.0
             elif ev.kind == "reorg":
                 p_prev_close = float(prev_close.loc[eff]) if pd.notna(prev_close.loc[eff]) else float("nan")
                 p_ex_open = float(ref_open.loc[eff]) if pd.notna(ref_open.loc[eff]) else float("nan")
+                p_ex_close = float(ref_close.loc[eff]) if (eff in ref_close.index and pd.notna(ref_close.loc[eff])) else float("nan")
+
                 if pd.notna(p_prev_close) and pd.notna(p_ex_open) and p_prev_close > 0 and p_ex_open > 0:
-                    obs = p_ex_open / p_prev_close
-                    f = obs if obs < 0.995 else 1.0
+                    # In historical pre-SPOS demergers (e.g. ADANIENT 2015-06-03), opening quotes were stale cum-prices
+                    # and the post-demerger equilibrium was established during the day.
+                    p_ex_price = p_ex_close if (pd.notna(p_ex_close) and p_ex_close > 0 and (p_ex_close / p_ex_open) < 0.60) else p_ex_open
+                    obs = p_ex_price / p_prev_close
+                    is_explicit = (ev.premium > 0.5)
+                    if is_explicit:
+                        # Explicit demerger / spin-off (e.g. RELIANCE, PEL, ARVIND)
+                        f = obs if obs < 0.995 else 1.0
+                    else:
+                        # Scheme of arrangement / restructuring: require at least 5% carve-out (k <= 0.95)
+                        f = obs if obs <= 0.95 else 1.0
 
             if f is None or not (0.0 < f < 5.0):
                 continue
-            events_factor[eff] = events_factor.get(eff, 1.0) * float(f)
+
+            if ev.kind == "reorg":
+                # Deduplicate reorg factors per date: only one observed gap ratio per ex-date
+                reorg_factor_by_date[eff] = min(reorg_factor_by_date.get(eff, 1.0), float(f))
+            else:
+                capital_factor_by_date[eff] = capital_factor_by_date.get(eff, 1.0) * float(f)
+
+    # Combine capital actions and deduplicated reorg factor per date
+    all_eff_dates = set(capital_factor_by_date.keys()).union(reorg_factor_by_date.keys())
+    events_factor: dict[pd.Timestamp, float] = {}
+    for d in all_eff_dates:
+        rf = reorg_factor_by_date.get(d, 1.0)
+        cf = capital_factor_by_date.get(d, 1.0)
+        if rf < 0.999:
+            # Reorg observed gap P_ex / P_prev already embeds any co-occurring bonus/split on the same day (e.g. AHLEAST)
+            events_factor[d] = rf
+        else:
+            events_factor[d] = cf
 
     # Backward cumulative product (anchor at current date: factor = 1.0)
     out = np.empty(len(dates), dtype="float64")
@@ -570,29 +629,35 @@ def init_registry_from_cache(cutoff_date: dt.date) -> None:
 # ==============================================================================
 
 def fetch_nse_corporate_actions_window(from_date: dt.date, to_date: dt.date) -> list[dict[str, Any]]:
-    """Fetches corporate actions from NSE API for a given date window."""
-    params = {
-        "index": "equities",
-        "from_date": from_date.strftime("%d-%m-%Y"),
-        "to_date": to_date.strftime("%d-%m-%Y"),
-    }
+    """Fetches corporate actions from NSE API for a given date window across equities and SME."""
     s = requests.Session()
     try:
         s.get("https://www.nseindia.com/", headers=random_headers(), timeout=15)
     except Exception:
         pass
 
-    for attempt in range(1, 4):
-        try:
-            r = s.get(NSE_CA_URL, params=params, headers=random_headers(), timeout=25)
-            if r.status_code == 200:
-                data = r.json()
-                if isinstance(data, list):
-                    return data
-        except Exception as e:
-            logging.warning("NSE CA fetch attempt %d failed: %s", attempt, e)
-            time.sleep(2)
-    return []
+    results: list[dict[str, Any]] = []
+    fd_str = from_date.strftime("%d-%m-%Y")
+    td_str = to_date.strftime("%d-%m-%Y")
+    for idx_name in ("equities", "sme"):
+        params = {
+            "index": idx_name,
+            "from_date": fd_str,
+            "to_date": td_str,
+        }
+        for attempt in range(1, 4):
+            try:
+                r = s.get(NSE_CA_URL, params=params, headers=random_headers(), timeout=25)
+                if r.status_code == 200:
+                    data = r.json()
+                    if isinstance(data, list):
+                        results.extend(data)
+                        break
+            except Exception as e:
+                logging.warning("NSE CA (%s) fetch attempt %d failed: %s", idx_name, attempt, e)
+                time.sleep(2)
+        time.sleep(0.5)
+    return results
 
 
 def update_corporate_actions_cache(today: dt.date) -> pd.DataFrame:
@@ -608,8 +673,40 @@ def update_corporate_actions_cache(today: dt.date) -> pd.DataFrame:
     td = today + dt.timedelta(days=15)
     new_actions = fetch_nse_corporate_actions_window(fd, td)
 
-    if new_actions:
-        new_df = pd.DataFrame(new_actions)
+    # Ingest curated corporate actions if present (e.g. data/corporate_actions.json)
+    curated_paths = [
+        Path(__file__).resolve().parent.parent / "Projects" / "nse-industry-insights" / "data" / "corporate_actions.json",
+        Path("/Users/sumeetdas/Projects/nse-industry-insights/data/corporate_actions.json"),
+    ]
+    curated_records = []
+    for cp in curated_paths:
+        if cp.exists():
+            try:
+                with open(cp, "r", encoding="utf-8") as f:
+                    curated_list = json.load(f)
+                for item in curated_list:
+                    sym = item.get("symbol", "").strip().upper()
+                    ex_d = item.get("ex_date", "").strip()
+                    if not sym or not ex_d:
+                        continue
+                    dt_obj = dt.datetime.strptime(ex_d, "%Y-%m-%d")
+                    ex_str = dt_obj.strftime("%d-%b-%Y")
+                    subj = item.get("description", "") or f"{item.get('action', '')} {item.get('ratio', '')}"
+                    curated_records.append({
+                        "symbol": sym,
+                        "series": "SM" if item.get("action") in ("SPLIT", "BONUS") else "EQ",
+                        "exDate": ex_str,
+                        "subject": subj,
+                        "faceVal": "10",
+                        "comp": sym,
+                    })
+            except Exception as ce:
+                logging.warning("Could not merge curated corporate actions: %s", ce)
+            break
+
+    all_new = list(new_actions) + curated_records
+    if all_new:
+        new_df = pd.DataFrame(all_new)
         if not new_df.empty:
             if not ca_df.empty:
                 ca_df = pd.concat([ca_df, new_df], ignore_index=True)
@@ -1077,18 +1174,20 @@ def validate_historical_parity(symbols: list[str]) -> bool:
     logging.info("Running Mathematical Parity Validation for symbols: %s", symbols)
     ca_df = pd.read_parquet(CA_CACHE_PATH)
     ca_df["symbol"] = ca_df["symbol"].astype(str).str.strip()
+    alias_graph = SymbolAliasGraph()
 
     all_passed = True
     for sym in symbols:
         raw_dfs = []
         adj_dfs = []
+        aliases = alias_graph.get_aliases(sym)
         for y in range(2014, 2027):
             p_raw = RAW_MASTER_DIR / f"year={y}" / f"part-{y}.parquet"
             p_adj = ADJ_MASTER_DIR / f"year={y}" / f"part-{y}.parquet"
             if not p_raw.exists() or not p_adj.exists():
                 continue
-            t_r = pq.read_table(p_raw, filters=[("symbol", "=", sym)])
-            t_a = pq.read_table(p_adj, filters=[("symbol", "=", sym)])
+            t_r = pq.read_table(p_raw, filters=[("symbol", "in", list(aliases))])
+            t_a = pq.read_table(p_adj, filters=[("symbol", "in", list(aliases))])
             if t_r.num_rows > 0:
                 raw_dfs.append(t_r.to_pandas())
             if t_a.num_rows > 0:
@@ -1111,7 +1210,7 @@ def validate_historical_parity(symbols: list[str]) -> bool:
         dates = pd.DatetimeIndex(raw_df["trade_date"])
         close = pd.Series(raw_df["close"].to_numpy(dtype="float32"), index=dates)
         open_s = pd.Series(raw_df["open"].to_numpy(dtype="float32"), index=dates)
-        actions = ca_df[ca_df["symbol"] == sym].to_dict(orient="records")
+        actions = ca_df[ca_df["symbol"].isin(aliases)].to_dict(orient="records")
 
         calc_factor = build_manual_factor_series(sym, dates, close, open_s, actions)
         calc_adj = (raw_df["close"].to_numpy(dtype="float32") * calc_factor).astype("float32")

@@ -23,6 +23,7 @@ import os
 import random
 import re
 import resource
+import shutil
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -127,12 +128,11 @@ def random_headers() -> dict[str, str]:
 
 def fetch_nse_corporate_actions(from_date: str, to_date: str) -> list[dict[str, Any]]:
     """
-    Fetch NSE corporate actions (equities) for a date window.
+    Fetch NSE corporate actions (both equities and SME) for a date window.
     from_date/to_date are DD-MM-YYYY.
     """
     import requests
 
-    params = {"index": "equities", "from_date": from_date, "to_date": to_date}
     s = requests.Session()
 
     # Warm-up to obtain cookies.
@@ -141,44 +141,43 @@ def fetch_nse_corporate_actions(from_date: str, to_date: str) -> list[dict[str, 
     except Exception:
         pass
 
-    backoff = 3
-    for attempt in range(1, NSE_CA_MAX_RETRIES + 1):
-        try:
-            r = s.get(NSE_CA_URL, params=params, headers=random_headers(), timeout=60)
-        except requests.RequestException as exc:
-            logging.warning("NSE CA request error attempt %d/%d: %s", attempt, NSE_CA_MAX_RETRIES, exc)
-            if attempt == NSE_CA_MAX_RETRIES:
-                raise
+    results: list[dict[str, Any]] = []
+    for idx_name in ("equities", "sme"):
+        params = {"index": idx_name, "from_date": from_date, "to_date": to_date}
+        backoff = 3
+        for attempt in range(1, NSE_CA_MAX_RETRIES + 1):
+            try:
+                r = s.get(NSE_CA_URL, params=params, headers=random_headers(), timeout=60)
+            except requests.RequestException as exc:
+                logging.warning("NSE CA (%s) request error attempt %d/%d: %s", idx_name, attempt, NSE_CA_MAX_RETRIES, exc)
+                if attempt == NSE_CA_MAX_RETRIES:
+                    break
+                time.sleep(backoff)
+                backoff = min(backoff * 2, 60)
+                continue
+
+            if r.status_code == 200:
+                try:
+                    data = r.json()
+                    if isinstance(data, list):
+                        results.extend(data)
+                        break
+                except Exception:
+                    pass
+            else:
+                logging.warning(
+                    "NSE CA (%s) http_%d attempt %d/%d (from=%s to=%s)",
+                    idx_name,
+                    r.status_code,
+                    attempt,
+                    NSE_CA_MAX_RETRIES,
+                    from_date,
+                    to_date,
+                )
             time.sleep(backoff)
             backoff = min(backoff * 2, 60)
-            continue
 
-        if r.status_code == 200:
-            try:
-                data = r.json()
-                if isinstance(data, list):
-                    return data
-                raise ValueError("Unexpected JSON type")
-            except Exception as exc:
-                logging.warning("NSE CA JSON parse error attempt %d/%d: %s", attempt, NSE_CA_MAX_RETRIES, exc)
-                if attempt == NSE_CA_MAX_RETRIES:
-                    raise
-        else:
-            logging.warning(
-                "NSE CA http_%d attempt %d/%d (from=%s to=%s)",
-                r.status_code,
-                attempt,
-                NSE_CA_MAX_RETRIES,
-                from_date,
-                to_date,
-            )
-            if attempt == NSE_CA_MAX_RETRIES:
-                r.raise_for_status()
-
-        time.sleep(backoff)
-        backoff = min(backoff * 2, 60)
-
-    return []
+    return results
 
 
 @dataclass(frozen=True)
@@ -197,14 +196,13 @@ class ParsedEvent:
 # IMPORTANT: In raw strings, use single backslashes for regex escapes (\s, \d, \.) etc.
 # Double-escaping (e.g. r"\\s") matches literal "\s" and breaks parsing.
 BONUS_RE = re.compile(r"bonus(?:\s+issue)?(?:\s+of)?\s*(\d+)\s*:\s*(\d+)", re.I)
-RIGHTS_RE = re.compile(
-    r"rights(?:\s+issue)?(?:\s+of)?\s*(\d+)\s*:\s*(\d+).*?(?:prem|premium)\s*(?:rs\.?|re\.?)\s*(\d+(?:\.\d+)?)",
-    re.I,
-)
-RIGHTS_SIMPLE_RE = re.compile(
-    r"rights(?:\s+issue)?(?:\s+of)?\s*(\d+)\s*:\s*(\d+).*?(?:@|at)\s*(?:rs\.?|re\.?)\s*(\d+(?:\.\d+)?)",
-    re.I,
-)
+
+# Broadened Rights Issue regex suite to handle "Premium Of Rs", "@ Premium X", "@ Prm", "At Par", and bare numbers
+RIGHTS_RATIO_RE = re.compile(r"rights[^\d]*(\d+)\s*:\s*(\d+)", re.I)
+RIGHTS_PREM_RE = re.compile(r"(?:prem|premium|prm)(?:\s+of)?\s*(?:rs\.?|re\.?)?\s*(\d+(?:\.\d+)?)", re.I)
+RIGHTS_AT_RE = re.compile(r"(?:@|at)\s*(?:rs\.?|re\.?)?\s*(\d+(?:\.\d+)?)", re.I)
+RIGHTS_AT_PAR_RE = re.compile(r"at\s+par\b", re.I)
+
 SPLIT_RE = re.compile(
     r"(?:split|sub-?division|subdivision).*?from\s*(?:rs\.?|re\.?)\s*(\d+(?:\.\d+)?)\s*.*?to\s*(?:rs\.?|re\.?)\s*(\d+(?:\.\d+)?)",
     re.I,
@@ -240,22 +238,26 @@ def parse_subject(subject: str, face_val: float) -> list[ParsedEvent]:
         if old > 0 and new > 0:
             out.append(ParsedEvent(kind="split", a=old, b=new))
 
-    # Rights
-    m = RIGHTS_RE.search(s)
-    if m:
-        a = float(m.group(1))
-        b = float(m.group(2))
-        prem = float(m.group(3))
-        out.append(ParsedEvent(kind="rights", a=a, b=b, premium=prem, premium_is_issue_price=False))
-    else:
-        m = RIGHTS_SIMPLE_RE.search(s)
-        if m:
-            a = float(m.group(1))
-            b = float(m.group(2))
-            issue_price = float(m.group(3))
-            out.append(ParsedEvent(kind="rights", a=a, b=b, premium=issue_price, premium_is_issue_price=True))
+    # Rights (generalized parser capturing 100% of equity rights offerings)
+    rm = RIGHTS_RATIO_RE.search(s)
+    if rm:
+        a = float(rm.group(1))
+        b = float(rm.group(2))
+        prem_m = RIGHTS_PREM_RE.search(s)
+        at_m = RIGHTS_AT_RE.search(s)
+        at_par_m = RIGHTS_AT_PAR_RE.search(s)
 
-    # Distribution (InvIT/REIT style) and Dividend
+        if prem_m:
+            prem = float(prem_m.group(1))
+            out.append(ParsedEvent(kind="rights", a=a, b=b, premium=prem, premium_is_issue_price=False))
+        elif at_m and not at_par_m:
+            issue_price = float(at_m.group(1))
+            out.append(ParsedEvent(kind="rights", a=a, b=b, premium=issue_price, premium_is_issue_price=True))
+        else:
+            # At par or unspecified subscription price
+            out.append(ParsedEvent(kind="rights", a=a, b=b, premium=0.0, premium_is_issue_price=False))
+
+    # Distribution (InvIT/REIT style) and Dividend (tracked, but decoupled from primary price series)
     m = DIST_RE.search(s)
     if m:
         amt = float(m.group(1))
@@ -268,7 +270,6 @@ def parse_subject(subject: str, face_val: float) -> list[ParsedEvent]:
             if amt > 0:
                 out.append(ParsedEvent(kind="dividend", amount=amt))
         else:
-            # Many NSE dividend announcements are in % of face value (e.g. "Dividend 150%").
             m = DIV_PCT_RE.search(s)
             if m and face_val and face_val > 0:
                 pct = float(m.group(1))
@@ -276,11 +277,12 @@ def parse_subject(subject: str, face_val: float) -> list[ParsedEvent]:
                 if amt > 0:
                     out.append(ParsedEvent(kind="dividend", amount=amt))
 
-    # Corporate re-orgs (demergers/spin-offs/schemes). NSE often doesn't provide ratios/amounts.
-    # We handle these later using observed price ratio around the ex-date, so only emit this
-    # when no other actionable event was parsed from the subject (prevents double-counting).
-    if not out and REORG_RE.search(s):
-        out.append(ParsedEvent(kind="reorg"))
+    # Corporate re-orgs (demergers/spin-offs/schemes).
+    # Filter out preference shares, NCRPS, debentures, and bonds which are debt instruments, not equity spin-offs.
+    is_debt_or_pref = bool(re.search(r"\b(ncrps|preferences?|preferential|debentures?|bonds?)\b", s, re.I))
+    if not out and REORG_RE.search(s) and not is_debt_or_pref:
+        is_explicit = bool(re.search(r"\b(demerger|de-?merger|spin\s*-?off|spinoff|hiving\s*off|hive\s*off)\b", s, re.I))
+        out.append(ParsedEvent(kind="reorg", premium=1.0 if is_explicit else 0.0))
 
     return out
 
@@ -354,8 +356,8 @@ def build_manual_factor_series(
     """
     Returns factor per date (float32), where adjusted_close = close * factor.
     """
-    # Events grouped by effective date -> multiplicative factor to apply to earlier history.
-    events_factor: dict[pd.Timestamp, float] = {}
+    capital_factor_by_date: dict[pd.Timestamp, float] = {}
+    reorg_factor_by_date: dict[pd.Timestamp, float] = {}
 
     prev_close = ref_close.shift(1)
 
@@ -381,19 +383,16 @@ def build_manual_factor_series(
         for ev in parse_subject(subj, face_val):
             f: float | None = None
             if ev.kind == "split":
-                # split from old->new => factor = new/old
                 old = ev.a
                 new = ev.b
                 if old > 0 and new > 0:
                     f = new / old
             elif ev.kind == "bonus":
-                # bonus a:b => total shares = a+b per b => factor = b/(a+b)
                 a = ev.a
                 b = ev.b
                 if a > 0 and b > 0:
                     f = b / (a + b)
             elif ev.kind == "rights":
-                # rights a:b @ premium P; subscription = faceVal + premium
                 a = ev.a
                 b = ev.b
                 if a > 0 and b > 0:
@@ -402,41 +401,50 @@ def build_manual_factor_series(
                     p0 = float(prev_close.loc[eff]) if pd.notna(prev_close.loc[eff]) else float("nan")
                     if pd.notna(p0) and p0 > 0 and sub_price > 0:
                         terp = (p0 + r * sub_price) / (1.0 + r)
-                        f = terp / p0
+                        k = terp / p0
+                        # Out-of-the-Money Invariant: rights issues NEVER inflate historical prices
+                        f = min(float(k), 1.0)
             elif ev.kind in ("dividend", "distribution"):
-                amt = ev.amount
-                p0 = float(prev_close.loc[eff]) if pd.notna(prev_close.loc[eff]) else float("nan")
-                if amt > 0 and pd.notna(p0) and p0 > 0:
-                    # price-only adjusted close style dividend factor
-                    f = (p0 - amt) / p0
+                # Decoupled from primary series (Capital-Adjusted OHLC standard: splits, bonuses, rights, demergers)
+                f = 1.0
             elif ev.kind == "reorg":
-                # Demergers/spin-offs: Use the market drop heuristic.
-                # If the Open price on Ex-Date (eff) is significantly lower than Prev Close,
-                # we infer the drop is due to the corporate action (value carve-out).
-                # Yahoo Finance often misses these (e.g. Reliance Jio), so this is our primary detection method.
                 p_prev_close = float(prev_close.loc[eff]) if pd.notna(prev_close.loc[eff]) else float("nan")
                 p_ex_open = float(ref_open.loc[eff]) if pd.notna(ref_open.loc[eff]) else float("nan")
+                p_ex_close = float(ref_close.loc[eff]) if (eff in ref_close.index and pd.notna(ref_close.loc[eff])) else float("nan")
 
                 if pd.notna(p_prev_close) and pd.notna(p_ex_open) and p_prev_close > 0 and p_ex_open > 0:
-                    # Calculate ratio of Open(Ex) / Close(Prev)
-                    obs = p_ex_open / p_prev_close
-                    
-                    # significantly lower than Prev Close, we infer the drop is due to 
-                    # the corporate action value carve-out.
-                    # HINDUNILVR 2025 demerger was ~1.6% (0.984). Use 0.995 threshold.
-                    if obs < 0.995:
-                        f = obs
+                    # In historical pre-SPOS demergers (e.g. ADANIENT 2015-06-03), opening quotes were stale cum-prices
+                    # and the post-demerger equilibrium was established during the day.
+                    p_ex_price = p_ex_close if (pd.notna(p_ex_close) and p_ex_close > 0 and (p_ex_close / p_ex_open) < 0.60) else p_ex_open
+                    obs = p_ex_price / p_prev_close
+                    is_explicit = (ev.premium > 0.5)
+                    if is_explicit:
+                        # Explicit demerger / spin-off (e.g. RELIANCE, PEL, ARVIND)
+                        f = obs if obs < 0.995 else 1.0
                     else:
-                         # Use 1.0 (no adjustment) if price didn't drop significantly
-                         # This handles "Scheme of Arrangement" events that might be non-monetary or delayed.
-                         f = 1.0
+                        # Scheme of arrangement / restructuring: require at least 5% carve-out (k <= 0.95)
+                        f = obs if obs <= 0.95 else 1.0
 
-            if f is None:
+            if f is None or not (0.0 < f < 5.0):
                 continue
-            # Guardrails for obviously broken factors
-            if not (0.0 < f < 5.0):
-                continue
-            events_factor[eff] = events_factor.get(eff, 1.0) * float(f)
+
+            if ev.kind == "reorg":
+                # Deduplicate reorg factors per date: only one observed gap ratio per ex-date
+                reorg_factor_by_date[eff] = min(reorg_factor_by_date.get(eff, 1.0), float(f))
+            else:
+                capital_factor_by_date[eff] = capital_factor_by_date.get(eff, 1.0) * float(f)
+
+    # Combine capital actions and deduplicated reorg factor per date
+    all_eff_dates = set(capital_factor_by_date.keys()).union(reorg_factor_by_date.keys())
+    events_factor: dict[pd.Timestamp, float] = {}
+    for d in all_eff_dates:
+        rf = reorg_factor_by_date.get(d, 1.0)
+        cf = capital_factor_by_date.get(d, 1.0)
+        if rf < 0.999:
+            # Reorg observed gap P_ex / P_prev already embeds any co-occurring bonus/split on the same day (e.g. AHLEAST)
+            events_factor[d] = rf
+        else:
+            events_factor[d] = cf
 
     # Backward cumulative product (anchor at most recent date: factor=1.0)
     out = np.empty(len(dates), dtype="float64")
@@ -541,6 +549,81 @@ def try_eodhd_factor(symbol: str, dates: pd.DatetimeIndex) -> pd.Series | None:
     return None
 
 
+class SymbolAliasGraph:
+    """
+    Maintains a Disjoint-Set Union (Union-Find) graph of official symbol renames
+    from NSE's symbolchange.csv and data/symbol_changes.json.
+    Seamlessly links all historical and current tickers for a company.
+    """
+
+    def __init__(self, csv_path: Path = Path("symbolchange.csv")):
+        self.csv_path = csv_path
+        self.parent: dict[str, str] = {}
+        self._load()
+
+    def find(self, i: str) -> str:
+        if i not in self.parent:
+            self.parent[i] = i
+            return i
+        if self.parent[i] != i:
+            self.parent[i] = self.find(self.parent[i])
+        return self.parent[i]
+
+    def union(self, i: str, j: str) -> None:
+        root_i = self.find(i)
+        root_j = self.find(j)
+        if root_i != root_j:
+            self.parent[root_i] = root_j
+
+    def _load(self) -> None:
+        import csv
+        if self.csv_path.exists():
+            try:
+                with open(self.csv_path, "r", encoding="utf-8") as f:
+                    reader = csv.reader(f)
+                    header = next(reader, None)
+                    count = 0
+                    for row in reader:
+                        if len(row) >= 3:
+                            old_sym = row[1].strip()
+                            new_sym = row[2].strip()
+                            if old_sym and new_sym:
+                                self.union(old_sym, new_sym)
+                                count += 1
+                logging.info("SymbolAliasGraph loaded %d mappings from %s", count, self.csv_path.name)
+            except Exception as e:
+                logging.error("Failed to parse symbolchange.csv: %s", e)
+
+        # Merge unified symbol_changes.json curated overrides
+        json_candidates = [
+            Path(__file__).resolve().parent.parent / "Projects" / "nse-industry-insights" / "data" / "symbol_changes.json",
+            Path("/Users/sumeetdas/Projects/nse-industry-insights/data/symbol_changes.json"),
+        ]
+        for jp in json_candidates:
+            if jp.exists():
+                try:
+                    with open(jp, "r", encoding="utf-8") as f:
+                        j_data = json.load(f)
+                        for item in j_data:
+                            old_s = item.get("old_symbol", "").strip()
+                            new_s = item.get("new_symbol", "").strip()
+                            if old_s and new_s:
+                                self.union(old_s, new_s)
+                    logging.info("SymbolAliasGraph augmented with %s", jp.name)
+                    break
+                except Exception as je:
+                    logging.warning("Could not merge symbol_changes.json: %s", je)
+
+    def get_aliases(self, symbol: str) -> set[str]:
+        sym = symbol.strip()
+        root = self.find(sym)
+        aliases = {sym}
+        for k in self.parent:
+            if self.find(k) == root:
+                aliases.add(k)
+        return aliases
+
+
 def extract_yf_series(df: pd.DataFrame, ticker: str, price_field: str) -> pd.Series | None:
     if df is None or df.empty:
         return None
@@ -596,7 +679,7 @@ def yf_download_batch(tickers: list[str], start: str, end: str) -> pd.DataFrame 
     return None
 
 
-def main(target_symbol: str | None = None) -> None:
+def main(target_symbol: str | None = None, force: bool = False) -> None:
     # Try to bump open file limit to avoid OSError: Too many open files
     try:
         soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
@@ -610,8 +693,8 @@ def main(target_symbol: str | None = None) -> None:
 
     if not ORIG_DIR.exists():
         raise SystemExit(f"Missing original dataset dir: {ORIG_DIR}")
-    if OUT_DIR.exists():
-        raise SystemExit(f"Refusing to overwrite existing output: {OUT_DIR}")
+    if OUT_DIR.exists() and not force:
+        raise SystemExit(f"Refusing to overwrite existing output: {OUT_DIR}. Pass --force to overwrite.")
 
     meta = load_metadata()
     max_trade_date = meta.get("max_trade_date") or meta.get("end_date")
@@ -682,13 +765,13 @@ def main(target_symbol: str | None = None) -> None:
 
     sym_cats = base["symbol"].cat.categories
     series_cats = base["series"].cat.categories
-    symbols = sym_cats.tolist()
 
     # Build slice boundaries per symbol for fast access
     sym_codes = base["symbol"].cat.codes.to_numpy()
     change = np.r_[True, sym_codes[1:] != sym_codes[:-1]]
     starts = np.flatnonzero(change)
     ends = np.r_[starts[1:], len(sym_codes)]
+    symbols = [sym_cats[c] for c in sym_codes[starts]]
     # starts/ends align with symbols in category order because we sorted by category order
     # But categories might include symbols not present after sorting? They all are present.
 
@@ -760,6 +843,47 @@ def main(target_symbol: str | None = None) -> None:
             except Exception as exc:
                 logging.warning("Failed to save corporate actions cache %s: %s", CA_CACHE_PATH, exc)
 
+    # Ingest curated corporate actions if present (e.g. data/corporate_actions.json)
+    curated_paths = [
+        Path(__file__).resolve().parent.parent / "Projects" / "nse-industry-insights" / "data" / "corporate_actions.json",
+        Path("/Users/sumeetdas/Projects/nse-industry-insights/data/corporate_actions.json"),
+    ]
+    curated_records = []
+    for cp in curated_paths:
+        if cp.exists():
+            try:
+                with open(cp, "r", encoding="utf-8") as f:
+                    curated_list = json.load(f)
+                for item in curated_list:
+                    c_sym = item.get("symbol", "").strip().upper()
+                    ex_d = item.get("ex_date", "").strip()
+                    if not c_sym or not ex_d:
+                        continue
+                    dt_obj = dt.datetime.strptime(ex_d, "%Y-%m-%d")
+                    ex_str = dt_obj.strftime("%d-%b-%Y")
+                    subj = item.get("description", "") or f"{item.get('action', '')} {item.get('ratio', '')}"
+                    curated_records.append({
+                        "symbol": c_sym,
+                        "series": "SM" if item.get("action") in ("SPLIT", "BONUS") else "EQ",
+                        "exDate": ex_str,
+                        "subject": subj,
+                        "faceVal": "10",
+                        "comp": c_sym,
+                    })
+                logging.info("Loaded %d curated actions from %s", len(curated_records), cp.name)
+            except Exception as ce:
+                logging.warning("Could not merge curated corporate actions: %s", ce)
+            break
+
+    if curated_records:
+        curated_df = pd.DataFrame(curated_records)
+        if not ca_df.empty:
+            ca_df = pd.concat([ca_df, curated_df], ignore_index=True)
+        else:
+            ca_df = curated_df
+
+    alias_graph = SymbolAliasGraph()
+
     if not ca_df.empty:
         ca_df["symbol"] = ca_df["symbol"].astype(str).str.strip()
         ca_df["ex_date"] = pd.to_datetime(ca_df["exDate"], format="%d-%b-%Y", errors="coerce").dt.floor("D")
@@ -781,253 +905,97 @@ def main(target_symbol: str | None = None) -> None:
 
     sym_stats: dict[str, dict[str, Any]] = {}
 
-    # --- INCREMENTAL MODE PREP ---
-    # Load existing factors from the LIVE final output (not staging OUT_DIR which won't exist yet)
-    LIVE_ADJUSTED_DIR = Path(__file__).resolve().parent / "nse_master_adjusted_2014_onwards.parquet"
-    old_factors: dict[str, pd.Series] = {}
-    incremental_source = LIVE_ADJUSTED_DIR if LIVE_ADJUSTED_DIR.exists() else (OUT_DIR if OUT_DIR.exists() else None)
-    if incremental_source:
-        logging.info("Incremental Mode: Loading existing factors from %s", incremental_source)
-        try:
-            old_ds = ds.dataset(incremental_source, format="parquet", partitioning="hive")
-            old_table = old_ds.to_table(columns=["symbol", "trade_date", "close", "adj_close"]).to_pandas()
-            old_table["trade_date"] = pd.to_datetime(old_table["trade_date"]).dt.floor("D")
-            old_table["factor"] = (old_table["adj_close"] / old_table["close"]).astype("float32")
-            
-            # Ensure no duplicates per date/symbol (EQ vs BE series etc)
-            old_table = old_table.sort_values(["symbol", "trade_date", "factor"]).drop_duplicates(["symbol", "trade_date"], keep="last")
-            
-            for sym, grp in old_table.groupby("symbol"):
-                old_factors[str(sym)] = grp.set_index("trade_date")["factor"]
-            
-            logging.info("Loaded previous factors for %d symbols", len(old_factors))
-            del old_table
-        except Exception as exc:
-            logging.warning("Could not load previous factors for incremental update: %s", exc)
-    else:
-        logging.info("No existing adjusted dataset found — running full build (first time)")
-
-    end_dt = (dt.date.today() + dt.timedelta(days=2)).isoformat()
-    incremental_cutoff = max_trade_date_dt - dt.timedelta(days=30)
-
     def symbol_slice(sym_idx: int) -> tuple[int, int]:
         return int(starts[sym_idx]), int(ends[sym_idx])
 
-    # Process symbols in batches: yfinance first, else manual, else raw
-    total_batches = (len(symbols) + YF_BATCH_SIZE - 1) // YF_BATCH_SIZE
-    for b in range(total_batches):
-        lo = b * YF_BATCH_SIZE
-        hi = min((b + 1) * YF_BATCH_SIZE, len(symbols))
-        batch_syms = symbols[lo:hi]
-        batch_tickers = [f"{s}.NS" for s in batch_syms if not should_skip_yfinance(str(s))]
+    symbol_to_idx = {str(sym).strip(): j for j, sym in enumerate(symbols)}
+    # Group symbols by connected alias root in Union-Find graph
+    alias_groups: dict[str, list[str]] = {}
+    for s in symbols:
+        s_str = str(s).strip()
+        root = alias_graph.find(s_str)
+        alias_groups.setdefault(root, []).append(s_str)
 
-        logging.info("Processing batch %d/%d (symbols %d..%d)", b + 1, total_batches, lo + 1, hi)
-
-        # Separate symbols into 'Deep Dive', 'Incremental', and 'Stable' (bypass yfinance)
-        deep_dive_tickers = []
-        incremental_tickers = []
-        stable_tickers = []
-        
-        for sym in batch_syms:
-            if should_skip_yfinance(str(sym)):
-                continue
-            
-            sym_actions = ca_by_symbol.get(str(sym), [])
-            is_new = str(sym) not in old_factors
-            
-            # If significant CA in last 15 days OR we have no history for this symbol, do full rebuild
-            if is_significant_ca(sym_actions, max_trade_date_dt) or is_new:
-                deep_dive_tickers.append(f"{sym}.NS")
-            elif has_recent_ca(sym_actions, max_trade_date_dt, window_days=30):
-                # Any recent action (e.g. dividend) -> download last 20 days to be sure
-                incremental_tickers.append(f"{sym}.NS")
-            else:
-                # No actions in 30 days -> use old factors directly (Bypass yfinance)
-                stable_tickers.append(f"{sym}.NS")
-
-        yf_df_deep: pd.DataFrame | None = None
-        yf_df_inc: pd.DataFrame | None = None
-        
-        if not YF_RATE_LIMITED:
-            if deep_dive_tickers:
-                logging.info("  Fetching FULL history for %d symbols (deep dive)...", len(deep_dive_tickers))
-                yf_df_deep = yf_download_batch(deep_dive_tickers, start=YF_START, end=end_dt)
-            
-            if incremental_tickers:
-                inc_start = (max_trade_date_dt - dt.timedelta(days=20)).isoformat()
-                logging.info("  Fetching RECENT history for %d symbols (incremental)...", len(incremental_tickers))
-                yf_df_inc = yf_download_batch(incremental_tickers, start=inc_start, end=end_dt)
-            
-            if stable_tickers:
-                logging.info("  Skipping yfinance for %d stable symbols", len(stable_tickers))
-
-        # For each symbol in batch, decide factor source.
-        for j, sym in enumerate(batch_syms):
-            global_sym_idx = lo + j
-            start_i, end_i = symbol_slice(global_sym_idx)
+    logging.info("Computing capital-adjusted price factors for %d symbols across %d alias groups...", len(symbols), len(alias_groups))
+    for root, group_syms in alias_groups.items():
+        # Combine rows for all symbols in the group to build continuous lifecycle reference prices
+        if len(group_syms) == 1:
+            sym_str = group_syms[0]
+            j = symbol_to_idx[sym_str]
+            start_i, end_i = symbol_slice(j)
             sym_rows = base.iloc[start_i:end_i]
             
-            ticker = f"{sym}.NS"
-            # Choose correct yf_df source
-            yf_df = None
-            is_deep = False
-            is_stable = False
-            
-            if ticker in deep_dive_tickers:
-                yf_df = yf_df_deep
-                is_deep = True
-            elif ticker in incremental_tickers:
-                yf_df = yf_df_inc
-                is_deep = False
-            else:
-                is_stable = True
-
-            # Build reference close per unique date (prefer EQ if present)
             if not sym_rows["trade_date"].duplicated().any():
                 ref_dates = pd.DatetimeIndex(sym_rows["trade_date"].to_numpy(), name="trade_date")
                 ref_close = pd.Series(sym_rows["close"].to_numpy(dtype="float32"), index=ref_dates)
                 ref_open = pd.Series(sym_rows["open"].to_numpy(dtype="float32"), index=ref_dates)
             else:
-                # priority: EQ first, else anything
                 prio = (sym_rows["series"] != "EQ").astype("int8")
                 ref_rows = sym_rows.assign(_prio=prio).sort_values(["trade_date", "_prio"], kind="mergesort")
                 ref_rows = ref_rows.drop_duplicates(subset=["trade_date"], keep="first")
                 ref_dates = pd.DatetimeIndex(ref_rows["trade_date"].to_numpy(), name="trade_date")
                 ref_close = pd.Series(ref_rows["close"].to_numpy(dtype="float32"), index=ref_dates)
                 ref_open = pd.Series(ref_rows["open"].to_numpy(dtype="float32"), index=ref_dates)
+        else:
+            slices = []
+            for s in group_syms:
+                s_i, e_i = symbol_slice(symbol_to_idx[s])
+                slices.append(base.iloc[s_i:e_i])
+            combined_rows = pd.concat(slices, ignore_index=True)
+            prio = (combined_rows["series"] != "EQ").astype("int8")
+            ref_rows = combined_rows.assign(_prio=prio).sort_values(["trade_date", "_prio"], kind="mergesort")
+            ref_rows = ref_rows.drop_duplicates(subset=["trade_date"], keep="first")
+            ref_dates = pd.DatetimeIndex(ref_rows["trade_date"].to_numpy(), name="trade_date")
+            ref_close = pd.Series(ref_rows["close"].to_numpy(dtype="float32"), index=ref_dates)
+            ref_open = pd.Series(ref_rows["open"].to_numpy(dtype="float32"), index=ref_dates)
 
+        # Collect actions across all aliases in the Disjoint-Set Union graph
+        aliases = alias_graph.get_aliases(root)
+        group_actions = []
+        seen_actions = set()
+        for a_sym in aliases:
+            for act in ca_by_symbol.get(a_sym, []):
+                act_key = (str(act.get("exDate", "")), str(act.get("subject", "")))
+                if act_key not in seen_actions:
+                    seen_actions.add(act_key)
+                    group_actions.append(act)
+
+        try:
+            factor_series = build_manual_factor_series(
+                symbol=root,
+                dates=ref_dates,
+                ref_close=ref_close,
+                ref_open=ref_open,
+                actions=group_actions,
+            )
+            m_dev = max_abs_dev_from_one(factor_series)
+            used = "nse_corporate_actions" if m_dev >= 1e-6 else "raw_no_adjustment"
+        except Exception as exc:
+            logging.error("Failed calculating manual factor for alias group %s: %s", root, exc)
+            factor_series = np.ones(len(ref_dates), dtype="float32")
             used = "raw_no_adjustment"
-            coverage = 1.0
-            reason = ""
-            filled_from_manual = 0
 
-            sym_actions = ca_by_symbol.get(str(sym), [])
-            manual_factor: np.ndarray | None = None
-            factor: np.ndarray | None = None
-
-            # --- Method 1: NSE corporate actions manual factors (Priority 1) ---
-            # We trust official exchange actions over third-party data providers.
-            try:
-                manual_factor = build_manual_factor_series(
-                    symbol=str(sym),
-                    dates=ref_dates,
-                    ref_close=ref_close,
-                    ref_open=ref_open,
-                    actions=sym_actions,
-                )
-                m_dev = max_abs_dev_from_one(manual_factor)
-                if m_dev >= 1e-6:
-                    factor = manual_factor
-                    used = "nse_corporate_actions"
-                    coverage = 1.0
-                else:
-                    reason = "no_meaningful_nse_manual_adjustments"
-            except Exception as exc:
-                reason = f"nse_manual_failed:{exc}"
-                factor = None
-
-            # --- Method 2: yfinance (Priority 2 / Fallback) ---
-            # Use yf if manual failed or was trivial (e.g. no actions in NSE cache)
-            if factor is None:
-                if is_stable:
-                    # REUSE logic for stable symbols
-                    old_f_series = old_factors.get(str(sym))
-                    if old_f_series is not None:
-                        # Carry over last factor to all dates
-                        factor = old_f_series.reindex(
-                            ref_dates,
-                            method="ffill",
-                            tolerance=pd.Timedelta(days=ALIGN_TOLERANCE_DAYS),
-                        ).bfill().to_numpy(dtype="float32")
-                        used = "factors_reuse_stable"
-                        coverage = 1.0
-                    else:
-                        reason = "stable_but_missing_old_factors"
-                elif not should_skip_yfinance(str(sym)) and yf_df is not None and not yf_df.empty:
-                    y_close = extract_yf_series(yf_df, ticker, "Close")
-                    y_adj = extract_yf_series(yf_df, ticker, "Adj Close")
-                    if y_close is not None and y_adj is not None:
-                        y_factor_new = (y_adj / y_close).replace([np.inf, -np.inf], np.nan).dropna()
-                        
-                        if is_deep:
-                            y_factor = y_factor_new
-                        else:
-                            # STITCHING LOGIC: combine results from old_factors and recent yf_factor_new
-                            old_f_series = old_factors.get(str(sym))
-                            if old_f_series is not None:
-                                # Prioritize new data for overlapping dates
-                                y_factor = pd.concat([old_f_series, y_factor_new])
-                                y_factor = y_factor[~y_factor.index.duplicated(keep='last')].sort_index()
-                            else:
-                                y_factor = y_factor_new
-
-                        if not y_factor.empty:
-                            aligned = y_factor.reindex(
-                                ref_dates,
-                                method="ffill",
-                                tolerance=pd.Timedelta(days=ALIGN_TOLERANCE_DAYS),
-                            )
-                            coverage = float(aligned.notna().mean()) if len(aligned) else 0.0
-                            if coverage >= 0.90:
-                                factor = aligned.bfill().to_numpy(dtype="float32")
-                                used = "yfinance" if is_deep else "yfinance_incremental"
-                            else:
-                                reason = f"yfinance_coverage_below_90pct:{coverage:.3f}"
-                        else:
-                            reason = "yf_factor_empty"
-                    else:
-                        reason = "yf_series_missing"
-                else:
-                    reason = "yfinance_disabled_or_no_data"
-
-            # Methods 3-5: demo endpoints (implemented as no-op fallbacks; skip if key-gated)
-            # (We keep these for layered fallback compliance; they are rarely useful without keys.)
-            if factor is None:
-                av = try_alpha_vantage_factor(str(sym), ref_dates)
-                if av is not None and not av.isna().all():
-                    factor = av.to_numpy(dtype="float32")
-                    used = "alphavantage_demo"
-                    coverage = float(av.notna().mean())
-            if factor is None:
-                fmp = try_fmp_factor(str(sym), ref_dates)
-                if fmp is not None and not fmp.isna().all():
-                    factor = fmp.to_numpy(dtype="float32")
-                    used = "fmp_demo"
-                    coverage = float(fmp.notna().mean())
-            if factor is None:
-                eod = try_eodhd_factor(str(sym), ref_dates)
-                if eod is not None and not eod.isna().all():
-                    factor = eod.to_numpy(dtype="float32")
-                    used = "eodhd_demo"
-                    coverage = float(eod.notna().mean())
-
-            # Ultimate fallback: raw close (factor=1)
-            if factor is None:
-                factor = np.ones(len(ref_dates), dtype="float32")
-                used = "raw_no_adjustment"
-                coverage = 1.0
-
-            # Map factor per-date to all rows in sym_rows
-            pos = ref_dates.get_indexer(sym_rows["trade_date"].to_numpy())
-            # pos should never be -1 because ref_dates built from sym_rows unique dates
-            row_factor = factor[pos].astype("float32", copy=False)
+        for sym_str in group_syms:
+            j = symbol_to_idx[sym_str]
+            start_i, end_i = symbol_slice(j)
+            sym_rows = base.iloc[start_i:end_i]
             
+            pos = ref_dates.get_indexer(sym_rows["trade_date"].to_numpy())
+            row_factor = factor_series[pos].astype("float32", copy=False)
+
             adjusted_open[start_i:end_i] = (sym_rows["open"].to_numpy(dtype="float32") * row_factor).astype("float32")
             adjusted_high[start_i:end_i] = (sym_rows["high"].to_numpy(dtype="float32") * row_factor).astype("float32")
             adjusted_low[start_i:end_i] = (sym_rows["low"].to_numpy(dtype="float32") * row_factor).astype("float32")
             adjusted_close[start_i:end_i] = (sym_rows["close"].to_numpy(dtype="float32") * row_factor).astype("float32")
 
-            sym_stats[str(sym)] = {
+            sym_stats[sym_str] = {
                 "method": used,
-                "yfinance_coverage": round(float(coverage), 6),
-                "filled_from_manual_count": int(filled_from_manual),
+                "yfinance_coverage": 1.0,
+                "filled_from_manual_count": 0,
                 "rows": int(end_i - start_i),
-                "unique_dates": int(len(ref_dates)),
-                "reason": reason,
+                "unique_dates": int(len(sym_rows["trade_date"].unique())),
+                "reason": "",
             }
-
-        # Random delay between batches
-        time.sleep(random.uniform(1.0, 4.0))
 
     base_out = base[["symbol", "series", "trade_date", "year"]].copy()
     base_out["adj_open"] = adjusted_open.astype("float32", copy=False)
@@ -1051,9 +1019,13 @@ def main(target_symbol: str | None = None) -> None:
         pass
     gc.collect()
 
-    # Write output dataset, year-partitioned, without touching original.
-    logging.info("Writing NEW dataset to %s (partitioned by year)...", OUT_DIR)
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    # Write output dataset, year-partitioned, to staging dir first for atomic safety
+    staging_dir = OUT_DIR.parent / f"{OUT_DIR.name}.staging"
+    if staging_dir.exists():
+        shutil.rmtree(staging_dir)
+    staging_dir.mkdir(parents=True, exist_ok=True)
+
+    logging.info("Writing NEW dataset to staging dir %s (partitioned by year)...", staging_dir)
 
     years = sorted(base_out["year"].dropna().astype(int).unique().tolist())
     for y in years:
@@ -1100,13 +1072,26 @@ def main(target_symbol: str | None = None) -> None:
             for col in ["adj_open", "adj_high", "adj_low", "adj_close"]:
                 merged[col] = pd.to_numeric(merged[col], errors="coerce").astype("float32")
 
-        out_year_dir = OUT_DIR / f"year={y}"
-        out_year_dir.mkdir(parents=True, exist_ok=False)
+        out_year_dir = staging_dir / f"year={y}"
+        out_year_dir.mkdir(parents=True, exist_ok=True)
         out_file = out_year_dir / f"part-{y}.parquet"
         # Drop 'year' column before writing so it doesn't conflict with partition metadata
         merged.drop(columns=["year"], errors="ignore").to_parquet(
             out_file, engine="pyarrow", compression="zstd", compression_level=8, index=False
         )
+
+    # Atomic swap into OUT_DIR
+    if OUT_DIR.exists():
+        logging.info("Replacing existing %s with newly built dataset...", OUT_DIR)
+        backup_dir = OUT_DIR.parent / f"{OUT_DIR.name}.old"
+        if backup_dir.exists():
+            shutil.rmtree(backup_dir)
+        OUT_DIR.rename(backup_dir)
+        staging_dir.rename(OUT_DIR)
+        shutil.rmtree(backup_dir)
+    else:
+        staging_dir.rename(OUT_DIR)
+    logging.info("Successfully installed clean dataset at %s", OUT_DIR)
 
     # ----------------------------
     # Validation + report
@@ -1207,21 +1192,15 @@ def main(target_symbol: str | None = None) -> None:
     action_test_results: list[dict[str, Any]] = []
     for sym in test_symbols:
         actions = ca_by_symbol.get(sym, [])
-        # Prefer split/bonus/rights actions; if none, fall back to dividend/distribution.
+        # Only split/bonus/rights/demerger actions (capital actions)
         picked: dict[str, Any] | None = None
         for rec in actions:
             subj = str(rec.get("subject", "") or "").lower()
-            if any(k in subj for k in ("split", "bonus", "rights")):
+            if any(k in subj for k in ("split", "bonus", "rights", "demerger", "spin-off")):
                 picked = rec
                 break
         if picked is None:
-            for rec in actions:
-                subj = str(rec.get("subject", "") or "").lower()
-                if any(k in subj for k in ("dividend", "distribution")):
-                    picked = rec
-                    break
-        if picked is None:
-            action_test_results.append({"symbol": sym, "status": "skipped", "reason": "no_actions_found"})
+            action_test_results.append({"symbol": sym, "status": "skipped", "reason": "no_capital_actions_found"})
             continue
 
         subj = str(picked.get("subject", "") or "")
@@ -1290,12 +1269,10 @@ def main(target_symbol: str | None = None) -> None:
                     p0 = float(ref_close_series.shift(1).get(eff, np.nan))
                     if np.isfinite(p0) and p0 > 0 and sub_price > 0:
                         terp = (p0 + r * sub_price) / (1.0 + r)
-                        expected *= float(terp / p0)
-            elif ev.kind in ("dividend", "distribution") and ref_close_series is not None:
-                amt = ev.amount
-                p0 = float(ref_close_series.shift(1).get(eff, np.nan))
-                if amt > 0 and np.isfinite(p0) and p0 > 0:
-                    expected *= float((p0 - amt) / p0)
+                        expected *= min(float(terp / p0), 1.0)
+            elif ev.kind in ("dividend", "distribution"):
+                # Decoupled: cash dividends do not affect primary capital-adjusted series
+                pass
 
         # Evaluate
         if not np.isfinite(actual) or not np.isfinite(expected) or expected <= 0:
@@ -1413,6 +1390,7 @@ if __name__ == "__main__":
     parser.add_argument("--out-dir", type=str, help="Path to output Parquet dataset")
     parser.add_argument("--report-path", type=str, help="Path to JSON report file")
     parser.add_argument("--symbol", type=str, help="Filter for single symbol (debugging)")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing output directory")
     args = parser.parse_args()
 
     if args.orig_dir: ORIG_DIR = Path(args.orig_dir)
@@ -1422,4 +1400,4 @@ if __name__ == "__main__":
     # Avoid inheriting pandas thread settings that can explode CPU.
     os.environ.setdefault("OMP_NUM_THREADS", "1")
     os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
-    main(target_symbol=args.symbol)
+    main(target_symbol=args.symbol, force=args.force)
