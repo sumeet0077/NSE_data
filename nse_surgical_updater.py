@@ -1114,7 +1114,7 @@ def run_surgical_update(trade_date: dt.date | None = None, trigger_frontend: boo
     meta = update_metadata_fast()
     logging.info("Metadata footers updated: %d total rows, max_trade_date=%s", meta["row_count"], meta["max_trade_date"])
 
-    # Step 8: Trigger frontend build pipeline (with idempotency guard)
+    # Step 8: Trigger frontend build pipeline (with delivery-aware idempotency guard)
     if trigger_frontend:
         state = {}
         if STATE_PATH.exists():
@@ -1122,25 +1122,64 @@ def run_surgical_update(trade_date: dt.date | None = None, trigger_frontend: boo
                 state = json.loads(STATE_PATH.read_text(encoding="utf-8"))
             except Exception:
                 state = {}
+
+        curr_has_delivery = check_delivery_present_for_date(trade_date)
+        prev_has_delivery = bool(state.get("frontend_delivery_present", False))
+        new_delivery_arrived = curr_has_delivery and not prev_has_delivery
+
         already_built = (
             state.get("date") == trade_date.isoformat()
             and state.get("frontend_success") is True
             and not unapplied_actions
+            and not new_delivery_arrived
         )
         if already_built:
             logging.info(
-                "Frontend build already succeeded today (%s) and zero unapplied corporate actions detected. Skipping redundant frontend rebuild.",
+                "Frontend build already succeeded today (%s) [delivery_present=%s] and zero unapplied corporate actions detected. Skipping redundant frontend rebuild.",
                 trade_date,
+                prev_has_delivery,
             )
         else:
-            trigger_frontend_pipeline()
+            if new_delivery_arrived:
+                logging.info(
+                    "Delivery data newly populated for today (%s). Triggering frontend rebuild with delivery telemetry.",
+                    trade_date,
+                )
+            trigger_frontend_pipeline(trade_date=trade_date)
 
     elapsed = time.time() - t_start
     logging.info("Surgical Update completed successfully in %.2f seconds.", elapsed)
     return True
 
 
-def trigger_frontend_pipeline() -> bool:
+def check_delivery_present_for_date(trade_date: dt.date | None = None) -> bool:
+    """
+    Checks whether daily processed parquet or master partition contains delivery percentages for trade_date.
+    """
+    if trade_date is None:
+        trade_date = dt.date.today()
+    daily_file = WORKDIR / "processed" / "daily" / str(trade_date.year) / f"{trade_date.isoformat()}.parquet"
+    if daily_file.exists():
+        try:
+            daily_df = pd.read_parquet(daily_file, columns=["deliv_pct"])
+            return bool(not daily_df.empty and (daily_df["deliv_pct"].notna() & (daily_df["deliv_pct"] > 0)).any())
+        except Exception:
+            pass
+    part_file = ADJ_MASTER_DIR / f"year={trade_date.year}" / f"part-{trade_date.year}.parquet"
+    if not part_file.exists():
+        part_file = RAW_MASTER_DIR / f"year={trade_date.year}" / f"part-{trade_date.year}.parquet"
+    if part_file.exists():
+        try:
+            tbl = pq.read_table(part_file, columns=["deliv_pct", "trade_date"], filters=[("trade_date", "==", pd.Timestamp(trade_date))])
+            if tbl.num_rows > 0:
+                deliv_col = tbl["deliv_pct"].to_pandas()
+                return bool((deliv_col.notna() & (deliv_col > 0)).any())
+        except Exception:
+            pass
+    return False
+
+
+def trigger_frontend_pipeline(trade_date: dt.date | None = None) -> bool:
     """
     Executes trigger_frontend_build.sh and records success/failure in daily_update_state.json.
     Ensures subsequent slot attempts retry if frontend build fails.
@@ -1160,13 +1199,15 @@ def trigger_frontend_pipeline() -> bool:
     try:
         res = subprocess_run_with_retry([str(FRONTEND_SCRIPT)], max_retries=1)
         state["frontend_success"] = True
+        state["frontend_delivery_present"] = check_delivery_present_for_date(trade_date)
         state["frontend_error"] = ""
         state["frontend_updated_at"] = dt.datetime.now().isoformat()
         STATE_PATH.write_text(json.dumps(state, indent=2), encoding="utf-8")
-        logging.info("Frontend build and deploy succeeded.")
+        logging.info("Frontend build and deploy succeeded (delivery_present=%s).", state["frontend_delivery_present"])
         return True
     except Exception as e:
         state["frontend_success"] = False
+        state["frontend_delivery_present"] = False
         state["frontend_error"] = str(e)
         state["frontend_updated_at"] = dt.datetime.now().isoformat()
         STATE_PATH.write_text(json.dumps(state, indent=2), encoding="utf-8")

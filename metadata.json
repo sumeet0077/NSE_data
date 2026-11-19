@@ -9,7 +9,7 @@
   "rows_with_deliv_pct_2015_onwards": 3956744,
   "deliv_pct_coverage_2015_onwards_percent": 61.5829,
   "feb_1_2026_exists": true,
-  "generated_at": "2026-11-19T19:24:17.726833",
+  "generated_at": "2026-11-19T19:42:13.167866",
   "output_dataset_dir": "/Users/sumeetdas/Antigravity_NSE_Data/nse_master_bhav_with_delivery_2014_onwards.parquet",
   "raw_downloads_dir": "/Users/sumeetdas/Antigravity_NSE_Data/raw_downloads",
   "processed_daily_dir": "/Users/sumeetdas/Antigravity_NSE_Data/processed/daily",
